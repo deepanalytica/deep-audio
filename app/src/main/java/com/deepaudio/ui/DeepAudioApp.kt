@@ -18,13 +18,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.RestartAlt
+import androidx.compose.material.icons.filled.SettingsSuggest
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
@@ -67,6 +70,7 @@ fun DeepAudioApp(
     onPreampChange: (Int) -> Unit,
     onMasterVolumeChange: (Float) -> Unit,
     onEffectsEnabled: (Boolean) -> Unit,
+    onThemeModeChange: (String) -> Unit,
     onShuffle: (Boolean) -> Unit,
     onRepeat: () -> Unit,
     onDismissError: () -> Unit
@@ -93,6 +97,13 @@ fun DeepAudioApp(
     ) {
         item {
             Header(onOpenFolder = onOpenFolder, count = state.tracks.size)
+        }
+
+        item {
+            ThemePanel(
+                selectedMode = state.themeMode,
+                onThemeModeChange = onThemeModeChange
+            )
         }
 
         if (state.tracks.isEmpty()) {
@@ -170,6 +181,40 @@ private fun Header(onOpenFolder: () -> Unit, count: Int) {
             Spacer(Modifier.width(8.dp))
             Text("Abrir")
         }
+    }
+}
+
+@Composable
+private fun ThemePanel(selectedMode: String, onThemeModeChange: (String) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        FilterChip(
+            selected = selectedMode == "system",
+            onClick = { onThemeModeChange("system") },
+            label = { Text("Sistema") },
+            leadingIcon = {
+                Icon(Icons.Default.SettingsSuggest, contentDescription = null)
+            }
+        )
+        FilterChip(
+            selected = selectedMode == "dark",
+            onClick = { onThemeModeChange("dark") },
+            label = { Text("Oscuro") },
+            leadingIcon = {
+                Icon(Icons.Default.DarkMode, contentDescription = null)
+            }
+        )
+        FilterChip(
+            selected = selectedMode == "light",
+            onClick = { onThemeModeChange("light") },
+            label = { Text("Claro") },
+            leadingIcon = {
+                Icon(Icons.Default.LightMode, contentDescription = null)
+            }
+        )
     }
 }
 
