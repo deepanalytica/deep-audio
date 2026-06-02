@@ -13,6 +13,7 @@ import com.deepaudio.audio.AudioPlayerController
 import com.deepaudio.audio.AudioPreset
 import com.deepaudio.data.AudioRepository
 import com.deepaudio.data.SettingsStore
+import com.deepaudio.model.AudioTrack
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,7 +33,8 @@ class DeepAudioViewModel(application: Application) : AndroidViewModel(applicatio
             bands = settings.loadBands(),
             preamp = settings.preamp,
             masterVolume = settings.masterVolume,
-            selectedPresetId = settings.selectedPresetId
+            selectedPresetId = settings.selectedPresetId,
+            themeMode = settings.themeMode
         )
     )
     val state: StateFlow<DeepAudioState> = _state.asStateFlow()
@@ -57,6 +59,21 @@ class DeepAudioViewModel(application: Application) : AndroidViewModel(applicatio
 
         settings.folderUri?.let { uri -> loadFolder(uri, persistPermission = false) }
         startTicker()
+    }
+
+    fun loadSharedAudio(uri: Uri) {
+        val track = AudioTrack(uri = uri, name = uri.lastPathSegment ?: "Audio")
+        controller.setPlaylist(listOf(track))
+        _state.update {
+            it.copy(
+                tracks = listOf(track),
+                currentIndex = 0,
+                positionMs = 0,
+                durationMs = 0L,
+                error = null
+            )
+        }
+        playTrack(0)
     }
 
     fun loadFolder(uri: Uri, persistPermission: Boolean = true) {
@@ -163,6 +180,12 @@ class DeepAudioViewModel(application: Application) : AndroidViewModel(applicatio
         _state.update { it.copy(effectsEnabled = enabled) }
         val current = _state.value
         effects.setEnabled(enabled, current.bands, current.preamp)
+    }
+
+    fun setThemeMode(mode: String) {
+        val nextMode = mode.takeIf { it in setOf("system", "dark", "light") } ?: "system"
+        settings.themeMode = nextMode
+        _state.update { it.copy(themeMode = nextMode) }
     }
 
     fun setShuffle(enabled: Boolean) {

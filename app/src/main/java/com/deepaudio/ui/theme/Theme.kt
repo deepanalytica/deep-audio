@@ -1,12 +1,14 @@
 package com.deepaudio.ui.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-private val DeepAudioColors = darkColorScheme(
-    primary = Color(0xFF9CD67A),
+private val DeepAudioDarkColors = darkColorScheme(
+    primary = Color(0xFFB9FF38),
     secondary = Color(0xFF8FC7FF),
     tertiary = Color(0xFFFFC857),
     background = Color(0xFF111318),
@@ -19,10 +21,30 @@ private val DeepAudioColors = darkColorScheme(
     onSurfaceVariant = Color(0xFFC2C7D0)
 )
 
+private val DeepAudioLightColors = lightColorScheme(
+    primary = Color(0xFF557C00),
+    secondary = Color(0xFF24577D),
+    tertiary = Color(0xFF855400),
+    background = Color(0xFFF8FAF2),
+    surface = Color(0xFFFFFFFF),
+    surfaceVariant = Color(0xFFE7EEDB),
+    onPrimary = Color(0xFFFFFFFF),
+    onSecondary = Color(0xFFFFFFFF),
+    onBackground = Color(0xFF171C12),
+    onSurface = Color(0xFF171C12),
+    onSurfaceVariant = Color(0xFF43483C)
+)
+
 @Composable
-fun DeepAudioTheme(content: @Composable () -> Unit) {
+fun DeepAudioTheme(themeMode: String = "system", content: @Composable () -> Unit) {
+    val useDarkTheme = when (themeMode) {
+        "dark" -> true
+        "light" -> false
+        else -> isSystemInDarkTheme()
+    }
+
     MaterialTheme(
-        colorScheme = DeepAudioColors,
+        colorScheme = if (useDarkTheme) DeepAudioDarkColors else DeepAudioLightColors,
         typography = MaterialTheme.typography,
         content = content
     )
