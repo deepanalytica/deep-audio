@@ -40,4 +40,4 @@ gradle clean assembleDebug
 
 ## Repository
 
-This repository is configured to build the APK automatically in GitHub Actions after each push.
+This repository is configured to build the APK automatically in GitHub Actions after each push and pull request.
