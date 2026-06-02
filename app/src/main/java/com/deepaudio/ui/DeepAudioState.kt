@@ -13,6 +13,7 @@ data class DeepAudioState(
     val preamp: Int = 0,
     val masterVolume: Float = 1f,
     val selectedPresetId: String = AudioPreset.flat.id,
+    val themeMode: String = "system",
     val effectsEnabled: Boolean = true,
     val shuffle: Boolean = false,
     val repeatMode: Int = 0,
