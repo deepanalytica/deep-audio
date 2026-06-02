@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.DeepAudio" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/deep_audio_background</item>
+        <item name="android:fontFamily">sans</item>
+        <item name="android:navigationBarColor">@color/deep_audio_background</item>
+        <item name="android:statusBarColor">@color/deep_audio_background</item>
+    </style>
+</resources>
