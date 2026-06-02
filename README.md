@@ -38,6 +38,6 @@ If Java 17, Android SDK 35, and Gradle are installed locally:
 gradle clean assembleDebug
 ```
 
-## Publish To GitHub
+## Repository
 
 This repository is configured to build the APK automatically in GitHub Actions after each push.
