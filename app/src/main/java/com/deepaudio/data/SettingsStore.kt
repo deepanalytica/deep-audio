@@ -23,6 +23,10 @@ class SettingsStore(context: Context) {
         get() = prefs.getFloat("master_volume", 1f)
         set(value) = prefs.edit().putFloat("master_volume", value).apply()
 
+    var themeMode: String
+        get() = prefs.getString("theme_mode", "system") ?: "system"
+        set(value) = prefs.edit().putString("theme_mode", value).apply()
+
     fun loadBands(): List<Int> {
         return List(10) { index -> prefs.getInt("band_$index", 0) }
     }
