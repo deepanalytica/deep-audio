@@ -38,6 +38,8 @@ jobs:
           /tmp/blender/blender --version
 
       - name: Build Practice Recording Production Mix
+        env:
+          DMP_SKIP_PREVIEW: "1"
         run: |
           /tmp/blender/blender --background --factory-startup             --python assets/blender/rooms/build_studio_rooms.py
 
@@ -46,6 +48,8 @@ jobs:
           /tmp/blender/blender --background --factory-startup             --python assets/blender/rooms/validate_studio_rooms.py
 
       - name: Build Mastering
+        env:
+          DMP_SKIP_PREVIEW: "1"
         run: |
           /tmp/blender/blender --background --factory-startup             --python assets/blender/mastering/build_mastering_room.py
 
@@ -70,13 +74,3 @@ jobs:
             git push
           fi
 
-      - name: Upload premium previews
-        uses: actions/upload-artifact@v4
-        with:
-          name: deep-music-producer-premium-room-previews
-          path: |
-            assets/blender/practice/*_preview.png
-            assets/blender/recording/*_preview.png
-            assets/blender/production/*_preview.png
-            assets/blender/mix/*_preview.png
-            assets/blender/mastering/*_preview.png
