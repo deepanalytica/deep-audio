@@ -44,8 +44,8 @@ function MasterConsoleJewelry(){
 function MonitorJewelry({side='left'}){
   const x=side==='left'?-2.28:2.28;
   return <group name={'monitor_jewelry_'+side} position={[x,1.42,-5.15]}>
-    <SpeakerDriverDetail position={[0,-.28,.43]} radius=.34 accent="#8c9699"/>
-    <SpeakerDriverDetail position={[0,.43,.43]} radius=.14 accent="#b5b2a9"/>
+    <SpeakerDriverDetail position={[0,-.28,.43]} radius={.34} accent="#8c9699"/>
+    <SpeakerDriverDetail position={[0,.43,.43]} radius={.14} accent="#b5b2a9"/>
     <HardwareLED position={[0,.76,.46]} color="#68ce94" size={.011}/>
   </group>;
 }
