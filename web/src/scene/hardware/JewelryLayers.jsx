@@ -15,7 +15,7 @@ import {
   SpeakerDriverDetail
 } from '../hardware/StudioHardware.jsx';
 
-function ConsoleSection({x,accent,variant=0}){
+function ConsoleSection({x,accent,variant={0}}){
   return <group position={[x,1.42,-1.13]} rotation={[-.11,0,0]}>
     <HardwareDisplay position={[0,.045,-.27]} width={.52} height={.18} title={variant===0?'TONE':variant===1?'EQ':variant===2?'DYNAMICS':variant===3?'STEREO':'LIMIT'} value={variant===4?'-0.8':'0.0'} unit={variant===4?'TP':'dB'} accent={accent} mode={variant%2?'curve':'meter'}/>
     <HardwareKnob position={[-.25,.075,.12]} size={.045} color="#aaa9a4" accent={accent}/>
@@ -54,7 +54,7 @@ function RackJewelry({side='left'}){
   const x=side==='left'?-3.25:3.25;
   const accent=side==='left'?'#8aa0a3':'#c28d53';
   return <group name={'rack_jewelry_'+side} position={[x,1.15,-3.55]}>
-    {[-.84,-.42,0,.42,.84].map((y,i)=><RackFaceplate key={i} position={[0,y,.39]} width=1.03 height={.32} accent={i===2?'#d0aa6a':accent} variant={i}/>)}
+    {[-.84,-.42,0,.42,.84].map((y,i)=><RackFaceplate key={i} position={[0,y,.39]} width={1.03} height={.32} accent={i===2?'#d0aa6a':accent} variant={i}/>)}
     {side==='right'&&<>
       <VUMeter position={[-.19,.42,.435]} rotation={[0,0,0]} accent="#d9a45f" needle={-.18}/>
       <VUMeter position={[.19,.42,.435]} rotation={[0,0,0]} accent="#d9a45f" needle={.12}/>
@@ -76,10 +76,10 @@ function ProductionJewelry(){
   return <group name="production_jewelry_v5">
     <PianoKeybed position={[0,1.29,-1.02]} rotation={[-.03,0,0]} octaves={5} width={3.28}/>
     <group position={[-3.22,1.35,-3.16]}>
-      {[-.82,-.4,.02,.44,.86].map((y,i)=><RackFaceplate key={i} position={[0,y,.02]} width=1.2 height={.31} accent={i%2?'#9e76d4':'#6bb5b9'} variant={i}/>)}
+      {[-.82,-.4,.02,.44,.86].map((y,i)=><RackFaceplate key={i} position={[0,y,.02]} width={1.2} height={.31} accent={i%2?'#9e76d4':'#6bb5b9'} variant={i}/>)}
     </group>
     <group position={[3.22,1.35,-3.16]}>
-      {[-.82,-.4,.02,.44,.86].map((y,i)=><RackFaceplate key={i} position={[0,y,.02]} width=1.2 height={.31} accent={i%2?'#bf73c9':'#6ca9cf'} variant={i+1}/>)}
+      {[-.82,-.4,.02,.44,.86].map((y,i)=><RackFaceplate key={i} position={[0,y,.02]} width={1.2} height={.31} accent={i%2?'#bf73c9':'#6ca9cf'} variant={i+1}/>)}
     </group>
     <HardwareDisplay position={[0,1.49,-.82]} rotation={[-Math.PI/2,0,0]} width={.78} height={.2} title="DEEP KEYS" value="WARM" unit="RHODES" accent="#9a72d1" mode="curve"/>
   </group>;
@@ -87,8 +87,8 @@ function ProductionJewelry(){
 
 function PracticeJewelry(){
   return <group name="practice_jewelry_v5">
-    <AmpControlStrip position={[-3.25,1.58,-3.94]} rotation={[0,0,0]} width=1.18 accent="#d7a05a"/>
-    <AmpControlStrip position={[3.3,1.56,-3.84]} rotation={[0,0,0]} width=1.18 accent="#d7a05a"/>
+    <AmpControlStrip position={[-3.25,1.58,-3.94]} rotation={[0,0,0]} width={1.18} accent="#d7a05a"/>
+    <AmpControlStrip position={[3.3,1.56,-3.84]} rotation={[0,0,0]} width={1.18} accent="#d7a05a"/>
     <PianoKeybed position={[2.35,1.28,-5.03]} rotation={[-.02,0,0]} octaves={4} width={2.18}/>
     <DrumHardwareDetail position={[0,.02,-2.2]} accent="#d7a05a"/>
   </group>;
@@ -98,7 +98,7 @@ function RecordingJewelry(){
   return <group name="recording_jewelry_v5">
     <MicrophoneGrille position={[2.5,1.78,-1.86]} scale={1.08}/>
     <group position={[3.72,1.14,-4.33]}>
-      {[-.72,-.3,.12,.54].map((y,i)=><RackFaceplate key={i} position={[0,y,0]} width=1.12 height={.31} accent={i===1?'#cc9b5d':'#829ba2'} variant={i}/>)}
+      {[-.72,-.3,.12,.54].map((y,i)=><RackFaceplate key={i} position={[0,y,0]} width={1.12} height={.31} accent={i===1?'#cc9b5d':'#829ba2'} variant={i}/>)}
     </group>
     <DrumHardwareDetail position={[-1.65,.02,-2.5]} accent="#c99b56"/>
   </group>;
@@ -113,10 +113,10 @@ function MixJewelry(){
         <HardwareFader position={[0,.045,.18]} length={.34} value={(i%7)/8+.08} accent={i%4===0?'#76a8b7':'#c9a46e'}/>
         <HardwareLED position={[0,.05,.4]} color={i%6===0?'#d76a54':'#67c88e'} size={.007}/>
       </group>)}
-      <HardwareDisplay position={[0,.08,-.57]} width=1.35 height={.22} title="MIX BUS" value="-18.2" unit="LUFS-S" accent="#6da4b6"/>
+      <HardwareDisplay position={[0,.08,-.57]} width={1.35} height={.22} title="MIX BUS" value="-18.2" unit="LUFS-S" accent="#6da4b6"/>
     </group>
-    <group position={[-3.65,1.12,-3.4]}>{[-.72,-.3,.12,.54].map((y,i)=><RackFaceplate key={i} position={[0,y,0]} width=1.14 height={.31} accent="#759aa5" variant={i}/>)}</group>
-    <group position={[3.65,1.12,-3.4]}>{[-.72,-.3,.12,.54].map((y,i)=><RackFaceplate key={i} position={[0,y,0]} width=1.14 height={.31} accent="#c59258" variant={i+2}/>)}</group>
+    <group position={[-3.65,1.12,-3.4]}>{[-.72,-.3,.12,.54].map((y,i)=><RackFaceplate key={i} position={[0,y,0]} width={1.14} height={.31} accent="#759aa5" variant={i}/>)}</group>
+    <group position={[3.65,1.12,-3.4]}>{[-.72,-.3,.12,.54].map((y,i)=><RackFaceplate key={i} position={[0,y,0]} width={1.14} height={.31} accent="#c59258" variant={i+2}/>)}</group>
   </group>;
 }
 
