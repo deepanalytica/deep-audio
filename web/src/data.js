@@ -4,39 +4,39 @@ export const ROOMS = {
     eyebrow:'SALA 01 · ENSAYO',
     title:'Entra. Escucha. Toca.',
     copy:'Un espacio vivo para tocar antes de configurar. La banda, los amplificadores y el room responden a tus decisiones.',
-    accent:'#d9a45f', bg:'#100c08',
-    camera:{position:[0,2.12,3.75], target:[0,1.12,-3.15]}
+    accent:'#1888ff', bg:'#070b10',
+    camera:{position:[0,2.55,7.2], target:[0,1.28,-2.65]}
   },
   record: {
     number:'02', label:'Grabación', action:'Captura',
     eyebrow:'SALA 02 · GRABACIÓN',
     title:'Captura la interpretación.',
     copy:'Tracking room, cabina, amplificadores y cadena de señal. La tecnología desaparece detrás de la toma.',
-    accent:'#c95650', bg:'#120808',
-    camera:{position:[0,2.12,3.9], target:[0,1.16,-3.25]}
+    accent:'#1888ff', bg:'#080b11',
+    camera:{position:[0,2.55,7.2], target:[0,1.28,-2.65]}
   },
   production: {
     number:'03', label:'Producción', action:'Construye',
     eyebrow:'SALA 03 · PRODUCCIÓN',
     title:'Construye un mundo sonoro.',
     copy:'Pianos, sintetizadores, ritmo, armonía y arreglos viven dentro de una sala diseñada para explorar.',
-    accent:'#8b65e8', bg:'#0d0915',
-    camera:{position:[0,2.22,3.65], target:[0,1.2,-3.35]}
+    accent:'#1888ff', bg:'#070a12',
+    camera:{position:[0,2.55,7.2], target:[0,1.28,-2.65]}
   },
   mix: {
     number:'04', label:'Mezcla', action:'Equilibra',
     eyebrow:'SALA 04 · MEZCLA',
     title:'Siéntate frente a la música.',
     copy:'Control room espacial con consola, monitores, buses, referencias y decisiones auditables.',
-    accent:'#3b9bc1', bg:'#071116',
-    camera:{position:[0,2.16,3.55], target:[0,1.14,-3.85]}
+    accent:'#1888ff', bg:'#061019',
+    camera:{position:[0,2.55,7.2], target:[0,1.28,-2.65]}
   },
   master: {
     number:'05', label:'Master', action:'Termina',
     eyebrow:'SALA 05 · MASTER',
     title:'Decide con perspectiva.',
     copy:'Una suite silenciosa y precisa para balance, dinámica, loudness, referencia y entrega final.',
-    accent:'#c99953', bg:'#110d07',
+    accent:'#1888ff', bg:'#070b11',
     camera:{position:[0,2.1,2.25], target:[0,1.18,-4.2]}
   }
 };

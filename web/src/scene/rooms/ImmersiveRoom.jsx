@@ -9,7 +9,7 @@ import { useStudioStore } from '../../store.js';
 const ROOM_DESIGNS = Object.freeze({
   practice: {
     assetId: 'practice_room_001',
-    accent: '#47c995',
+    accent: '#1688ff',
     warm: '#e49456',
     hitboxes: [
       { id: 'drum_kit', type: 'RHYTHM STATION', title: 'Deep Session Drums', description: 'Kit, groove, dinámica y relación con la sala.', actions: ['Pocket', 'Open', 'Half-time', 'Roomy'], position: [0, .88, -2.9], size: [2.45, 1.9, 2.0], focus: { position: [0, 1.85, .55], target: [0, .9, -2.9] } },
@@ -20,7 +20,7 @@ const ROOM_DESIGNS = Object.freeze({
   },
   record: {
     assetId: 'recording_room_001',
-    accent: '#dc5543',
+    accent: '#1688ff',
     warm: '#e9a05b',
     hitboxes: [
       { id: 'vocal_mic', type: 'CAPTURE CHAIN', title: 'Deep Vocal Capture', description: 'Micrófono, previo y dinámica de entrada sin perder la sala.', actions: ['Intimate', 'Open', 'Air', 'Dark'], position: [2.5, 1.55, -2.1], size: [.9, 2.0, .9], focus: { position: [1.15, 1.7, .35], target: [2.5, 1.55, -2.1] } },
@@ -31,7 +31,7 @@ const ROOM_DESIGNS = Object.freeze({
   },
   production: {
     assetId: 'production_room_001',
-    accent: '#7669e8',
+    accent: '#1688ff',
     warm: '#bd70dc',
     hitboxes: [
       { id: 'studio_keyboard', type: 'PERFORMANCE KEYS', title: 'Deep Studio Keyboard', description: 'Piano, síntesis y capas desde la posición central.', actions: ['Grand', 'Electric', 'Analog', 'Layer'], position: [0, 1.05, -1.18], size: [3.7, .55, .9], focus: { position: [0, 2.0, 1.25], target: [0, 1.0, -1.18] } },
@@ -42,7 +42,7 @@ const ROOM_DESIGNS = Object.freeze({
   },
   mix: {
     assetId: 'mix_room_001',
-    accent: '#45a8d2',
+    accent: '#1688ff',
     warm: '#d69a55',
     hitboxes: [
       { id: 'mix_console', type: 'MIX CONSOLE', title: 'Deep Spatial Console', description: 'Balance, panorama, profundidad, buses y automatización.', actions: ['Balance', 'Depth', 'Glue', 'Automation'], position: [0, 1.05, -1.15], size: [6.45, 1.35, 1.8], focus: { position: [0, 2.25, 1.0], target: [0, 1.05, -1.75] } },
@@ -102,11 +102,11 @@ function RoomHitbox({ hotspot, accent }) {
 
 function DesignedLighting({ design }) {
   return <>
-    <ambientLight intensity={.14}/>
-    <hemisphereLight args={['#d8c8b5', '#07090b', .55]}/>
-    <spotLight position={[0, 4.2, 1.2]} intensity={58} angle={.58} penumbra={.82} decay={1.7} distance={14} color="#f2d2a6" castShadow shadow-mapSize={[1024, 1024]}/>
-    <pointLight position={[-3.5, 2.1, -2.8]} intensity={7} distance={6.5} decay={2} color={design.accent}/>
-    <pointLight position={[3.3, 1.8, -3.4]} intensity={5} distance={6} decay={2} color={design.warm}/>
+    <ambientLight intensity={.28}/>
+    <hemisphereLight args={['#dceaff', '#080a0d', .72]}/>
+    <spotLight position={[0, 4.2, 1.2]} intensity={72} angle={.62} penumbra={.86} decay={1.7} distance={15} color="#f5c48e" castShadow shadow-mapSize={[1024, 1024]}/>
+    <pointLight position={[-3.5, 2.1, -2.8]} intensity={9} distance={7} decay={2} color={design.accent}/>
+    <pointLight position={[3.3, 1.8, -3.4]} intensity={7} distance={6.5} decay={2} color={design.warm}/>
     <Environment resolution={160}>
       <Lightformer intensity={2.8} color="#f0d4af" position={[0, 4.2, -1.4]} scale={[5.5, 1.1, 1]} rotation-x={Math.PI / 2}/>
       <Lightformer intensity={1.5} color={design.accent} position={[-4.2, 1.8, -2.2]} scale={[2.1, 3.0, 1]} rotation-y={Math.PI / 2}/>

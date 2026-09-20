@@ -6,20 +6,25 @@ import { audioEngine } from '../audio/engine.js';
 function Brand(){
   return <div className="brand">
     <span className="brand-bars">{[10,22,32,21,12].map((h,i)=><i key={i} style={{height:h}}/>)}</span>
-    <span><b>DEEP MUSIC</b><small>PRODUCER</small></span>
+    <span><b>DEEP MUSIC</b><small>PRODUCER</small><em>TU ESTUDIO. SIN LÍMITES.</em></span>
   </div>;
 }
 
 function TopBar(){
   const audioReady=useStudioStore((s)=>s.audioReady);
   const setMapOpen=useStudioStore((s)=>s.setMapOpen);
+  const room=useStudioStore((s)=>s.room),setRoom=useStudioStore((s)=>s.setRoom);
   return <header className="topbar">
     <Brand/>
-    <div className="session-status"><i/>NUEVA SESIÓN</div>
-    <div className="top-spacer"/>
-    <button className="glass-button" onClick={()=>setMapOpen(true)}>Mapa del estudio</button>
-    <button className="glass-button" onClick={()=>audioEngine.init()}>Audio <strong>{audioReady?'ON':'OFF'}</strong></button>
-    <a className="glass-button" href="https://github.com/deepanalytica/deep-audio" target="_blank" rel="noreferrer">GitHub ↗</a>
+    <nav className="workflow-nav" aria-label="Flujo de producción">{Object.entries(ROOMS).map(([id,r])=>
+      <button key={id} className={room===id?'active':''} onClick={()=>setRoom(id)}>
+        <span>{r.number}</span><div><b>{r.label}</b><small>{r.action}</small></div>
+      </button>
+    )}</nav>
+    <div className="top-tools">
+      <button className="icon-button" aria-label="Mapa del estudio" onClick={()=>setMapOpen(true)}>⌘</button>
+      <button className={'audio-state '+(audioReady?'active':'')} onClick={()=>audioEngine.init()}><i/>{audioReady?'AUDIO ON':'ACTIVAR AUDIO'}</button>
+    </div>
   </header>;
 }
 
@@ -48,9 +53,26 @@ const quick=[
 
 function QuickActions(){
   const openDrawer=useStudioStore((s)=>s.openDrawer);
-  return <div className="quick-actions">{quick.map(([id,icon,title,sub])=>
-    <button key={id} onClick={()=>openDrawer(id)}><span>{icon}</span><div><b>{title}</b><small>{sub}</small></div></button>
-  )}</div>;
+  const room=useStudioStore((s)=>s.room),r=ROOMS[room];
+  const roomStatus={practice:'BANDA PREPARADA',record:'SEÑAL ARMADA',production:'IDEA EN CURSO',mix:'MEZCLA ABIERTA',master:'MASTER LISTO'}[room];
+  const signalLabel={practice:'Interpretación',record:'Entrada principal',production:'Bus creativo',mix:'Mezcla estéreo',master:'Salida final'}[room];
+  const bars=[9,15,22,11,28,34,18,42,27,19,37,51,29,44,17,31,55,39,24,48,35,57,26,45,33,20,41,53,30,47,24,38,50,28,43,18,34,46,23,39,29,49,21,36,52,31,44,26];
+  return <aside className="stage-console">
+    <div className="stage-console-head">
+      <div className="stage-identity"><span>{r.number}</span><div><b>{r.label}</b><small>{r.eyebrow.replace(/^SALA \d+ · /,'')}</small></div></div>
+      <div className="session-status"><i/>{roomStatus}</div>
+    </div>
+    <div className="stage-console-body">
+      <div className="signal-strip">
+        <div className="signal-meta"><span>{signalLabel}</span><b>{room==='master'?'−9.2 LUFS':'00:00:00'}</b></div>
+        <div className="waveform" aria-hidden="true">{bars.map((h,i)=><i key={i} style={{height:h+'%'}}/>)}</div>
+        <div className="channel-meter"><i/><i/></div>
+      </div>
+      <div className="quick-actions">{quick.map(([id,icon,title,sub])=>
+        <button key={id} onClick={()=>openDrawer(id)}><span>{icon}</span><div><b>{title}</b><small>{sub}</small></div><em>↗</em></button>
+      )}</div>
+    </div>
+  </aside>;
 }
 
 const MASTERING_PROFILES=['Natural','Streaming','Dynamic','Power','Custom'];
@@ -216,7 +238,7 @@ function Transport(){
 
 export default function Hud(){
   return <div className="hud">
-    <TopBar/><RoomRail/><RoomIntro/>
+    <TopBar/><RoomIntro/>
     <div className="movement-hint"><b>ARRASTRA</b> para mirar · <b>WASD</b> para moverte · <b>CLIC</b> para interactuar</div>
     <QuickActions/><ContextPanel/><Drawer/><StudioMap/><Transport/>
   </div>;
