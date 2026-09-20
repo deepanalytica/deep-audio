@@ -9,9 +9,9 @@ export default function App(){
   return <main className="app-shell">
     <Canvas
       shadows="percentage"
-      dpr={[1,1.75]}
-      camera={{position:[0,1.62,7.7],fov:50,near:.05,far:60}}
-      gl={{antialias:true,powerPreference:'high-performance',alpha:false}}
+      dpr={[1,2]}
+      camera={{position:[0,1.62,7.7],fov:46,near:.05,far:70}}
+      gl={{antialias:true,powerPreference:'high-performance',alpha:false,stencil:false,depth:true}}
       onPointerMissed={closeSelected}
     >
       <Suspense fallback={null}><StudioScene/></Suspense>
