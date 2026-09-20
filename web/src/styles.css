@@ -500,11 +500,11 @@ body{font-family:"Arial Narrow","Roboto Condensed",Inter,ui-sans-serif,system-ui
 
 
 /* V5.1 — startup integrity: never expose the low-fidelity scene before first valid frame */
-.app-shell.app-loading > canvas{
+.app-shell.app-loading canvas{
   opacity:0 !important;
   visibility:hidden !important;
 }
-.app-shell.app-ready > canvas{
+.app-shell.app-ready canvas{
   opacity:1;
   visibility:visible;
   transition:opacity .44s var(--ease);
