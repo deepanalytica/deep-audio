@@ -5,7 +5,7 @@ export const ROOMS = {
     title:'Entra. Escucha. Toca.',
     copy:'Un espacio vivo para tocar antes de configurar. La banda, los amplificadores y el room responden a tus decisiones.',
     accent:'#d9a45f', bg:'#100c08',
-    camera:{position:[0,1.62,7.7], target:[0,1.25,-2.7]}
+    camera:{position:[0,2.12,3.75], target:[0,1.12,-3.15]}
   },
   record: {
     number:'02', label:'Grabación', action:'Captura',
@@ -13,7 +13,7 @@ export const ROOMS = {
     title:'Captura la interpretación.',
     copy:'Tracking room, cabina, amplificadores y cadena de señal. La tecnología desaparece detrás de la toma.',
     accent:'#c95650', bg:'#120808',
-    camera:{position:[0.1,1.62,7.5], target:[0,1.25,-2.9]}
+    camera:{position:[0,2.12,3.9], target:[0,1.16,-3.25]}
   },
   production: {
     number:'03', label:'Producción', action:'Construye',
@@ -21,7 +21,7 @@ export const ROOMS = {
     title:'Construye un mundo sonoro.',
     copy:'Pianos, sintetizadores, ritmo, armonía y arreglos viven dentro de una sala diseñada para explorar.',
     accent:'#8b65e8', bg:'#0d0915',
-    camera:{position:[0,1.68,7.6], target:[0,1.15,-2.8]}
+    camera:{position:[0,2.22,3.65], target:[0,1.2,-3.35]}
   },
   mix: {
     number:'04', label:'Mezcla', action:'Equilibra',
@@ -29,7 +29,7 @@ export const ROOMS = {
     title:'Siéntate frente a la música.',
     copy:'Control room espacial con consola, monitores, buses, referencias y decisiones auditables.',
     accent:'#3b9bc1', bg:'#071116',
-    camera:{position:[0,1.6,7.9], target:[0,1.2,-3.4]}
+    camera:{position:[0,2.16,3.55], target:[0,1.14,-3.85]}
   },
   master: {
     number:'05', label:'Master', action:'Termina',
@@ -37,7 +37,7 @@ export const ROOMS = {
     title:'Decide con perspectiva.',
     copy:'Una suite silenciosa y precisa para balance, dinámica, loudness, referencia y entrega final.',
     accent:'#c99953', bg:'#110d07',
-    camera:{position:[0,1.62,8.1], target:[0,1.1,-3.5]}
+    camera:{position:[0,2.1,2.25], target:[0,1.18,-4.2]}
   }
 };
 

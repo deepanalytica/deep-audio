@@ -2,6 +2,35 @@
 
 The roadmap is ordered by risk, not by visual excitement.
 
+## Immersive Asset Pipeline
+
+Status: five-room Blender design set implemented and integrated; review/optimization remains.
+
+Current visual system:
+
+- `MASTERING_ROOM_001` real-scale procedural benchmark;
+- original mastering-console hero fallback with semantic sections;
+- runtime `AssetModel` / registry / fallback contract;
+- manifest with provenance and target GLB paths;
+- smooth camera focus and contextual mastering HUD;
+- demo metering labelled as non-live data;
+- visual-twin / acoustic-twin boundary documented.
+- Blender 5.2.1 LTS source, GLB export and visual review render;
+- 99,184-triangle modular room with 17 materials and applied mesh transforms.
+- `PRACTICE_ROOM_001`, `RECORDING_ROOM_001`, `PRODUCTION_ROOM_001` and `MIX_ROOM_001` derived from the mastering benchmark;
+- dedicated hero objects, semantic hotspots, runtime lighting and camera focuses for every room;
+- measured room budgets from 41,752 to 77,500 GLB triangles with 11–12 exported materials;
+- preserved procedural fallbacks and session-player overlays across the full studio.
+
+Next gate:
+
+- repeat the Blender MCP smoke test whenever a new session attaches;
+- profile the integrated monolithic room and decide whether split hero exports reduce load/draw-call cost;
+- add image textures only where they materially outperform the current physically coherent procedural materials;
+- compare future GLB revisions against the procedural fallback and eight camera references.
+- profile all five rooms on representative desktop GPUs before introducing texture sets or automatic preload;
+- split high-reuse hero assets only when profiling demonstrates a load-time or memory benefit.
+
 ## M0 — Foundation
 
 Status: implemented in the desktop foundation branch.

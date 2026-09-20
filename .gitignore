@@ -5,3 +5,6 @@ local.properties
 *.iml
 captures/
 app/build/
+web/node_modules/
+web/dist/
+*.blend[0-9]

@@ -53,11 +53,57 @@ function QuickActions(){
   )}</div>;
 }
 
+const MASTERING_PROFILES=['Natural','Streaming','Dynamic','Power','Custom'];
+const MASTERING_CHAIN=['Tone','Dynamic EQ','Compression','Saturation','Stereo','Limiter','Reference','Metering'];
+const DEMO_MASTERING_METRICS=[
+  ['Integrated','−13.8','LUFS'],
+  ['Short-term','−12.6','LUFS'],
+  ['True Peak','−1.0','dBTP'],
+  ['Crest Factor','9.4','dB'],
+  ['Correlation','+0.82',''],
+  ['Dynamic Range','10.7','LU']
+];
+
+function MasteringContext({selected,close}){
+  const profile=useStudioStore((s)=>s.masteringProfile);
+  const setProfile=useStudioStore((s)=>s.setMasteringProfile);
+  const controls=useStudioStore((s)=>s.masteringControls);
+  const setControl=useStudioStore((s)=>s.setMasteringControl);
+  const advanced=[
+    ['tone','Tone','−','+'],
+    ['dynamicEq','Dynamic EQ','0','100'],
+    ['compression','Compression','0','100'],
+    ['saturation','Saturation','0','100'],
+    ['stereo','Stereo','Mono','Wide'],
+    ['ceiling','Ceiling','−3','0']
+  ];
+  return <aside className="context-panel mastering-context open">
+    <div className="panel-head"><div><small>{selected.type}</small><h2>{selected.title}</h2></div><button aria-label="Volver al estudio" onClick={close}>×</button></div>
+    <p>{selected.description}</p>
+    <div className="master-section-label"><span>Starting point</span><small>REVERSIBLE</small></div>
+    <div className="master-profiles">{MASTERING_PROFILES.map((name)=><button key={name} className={profile===name?'active':''} onClick={()=>setProfile(name)}>{name}</button>)}</div>
+    <div className="master-chain" aria-label="Mastering signal chain">{MASTERING_CHAIN.map((item,index)=><span key={item} className={index<6?'enabled':''}>{item}</span>)}</div>
+    <div className="master-section-label"><span>Metering</span><small className="demo-badge">DEMO · NO LIVE ANALYSER</small></div>
+    <div className="master-meters">{DEMO_MASTERING_METRICS.map(([label,value,unit])=><div key={label}><span>{label}</span><b>{value}<small>{unit}</small></b></div>)}</div>
+    <details className="advanced-controls">
+      <summary>Advanced controls <span>Open only when precision matters</span></summary>
+      <div>{advanced.map(([id,label,minLabel,maxLabel])=>{
+        const min=id==='tone'?-100:id==='ceiling'?-3:0;
+        const max=id==='ceiling'?0:id==='stereo'?150:100;
+        const step=id==='ceiling'?.1:1;
+        return <label key={id}><span><b>{label}</b><small>{minLabel} · {maxLabel}</small></span><input type="range" min={min} max={max} step={step} value={controls[id]} onChange={(event)=>setControl(id,Number(event.target.value))}/></label>;
+      })}</div>
+    </details>
+    <button className="return-studio" onClick={close}>Return to operator view</button>
+  </aside>;
+}
+
 function ContextPanel(){
   const selected=useStudioStore((s)=>s.selected),close=useStudioStore((s)=>s.closeSelected);
   if(!selected)return null;
+  if(selected.panel==='mastering')return <MasteringContext selected={selected} close={close}/>;
   return <aside className="context-panel open">
-    <div className="panel-head"><div><small>{selected.type}</small><h2>{selected.title}</h2></div><button onClick={close}>×</button></div>
+    <div className="panel-head"><div><small>{selected.type}</small><h2>{selected.title}</h2></div><button aria-label="Volver al estudio" onClick={close}>×</button></div>
     <p>{selected.description}</p>
     <div className="context-grid">{selected.actions?.map((a,i)=><button key={a} className="context-option">
       <small>PRESET {String(i+1).padStart(2,'0')}</small><b>{a}</b><span>Escuchar y comparar</span>
