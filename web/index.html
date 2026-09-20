@@ -6,7 +6,18 @@
 <meta name="theme-color" content="#070809">
 <meta name="description" content="Deep Music Producer — immersive studio experience">
 <title>Deep Music Producer — Immersive Studio</title>
-<link rel="stylesheet" href="./styles.css">
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#070809;color:#f3f0e9;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+#app{position:relative;width:100vw;height:100vh;min-width:980px;min-height:640px;background:#070809;overflow:hidden}
+#studio{position:absolute;inset:0;width:100%;height:100%;display:block;background:#070809}
+.topbar{position:absolute;z-index:20;top:0;left:0;right:0;height:68px;display:flex;align-items:center;padding:0 26px;background:rgba(6,7,8,.82);border-bottom:1px solid rgba(255,255,255,.12)}
+.room-rail{position:absolute;z-index:14;top:90px;left:22px;width:94px}
+.context-panel{position:absolute;right:24px;top:90px;transform:translateX(calc(100% + 40px));opacity:0}
+.drawer{position:absolute;right:24px;bottom:92px;transform:translateY(calc(100% + 120px));opacity:0}
+.studio-map{position:absolute;inset:0;opacity:0;pointer-events:none}
+.transport{position:absolute;z-index:20;left:22px;right:22px;bottom:16px}
+</style>
+<link rel="stylesheet" href="./studio-v2.css?v=20260920-2">
 </head>
 <body>
 <div id="app" class="room-practice">
@@ -102,6 +113,6 @@
   <div id="toast" class="toast"></div>
 </div>
 
-<script type="module" src="./app.js"></script>
+<script type="module" src="./studio-v2.js?v=20260920-2"></script>
 </body>
 </html>
