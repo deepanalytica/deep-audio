@@ -181,7 +181,7 @@ export function DrumHardwareDetail({position=[0,0,0],accent='#c79a54'}){
     <mesh position={[0,.035,.18]} rotation={[0,0,.04]}><boxGeometry args={[.3,.045,.13]}/><meshPhysicalMaterial color="#242626" metalness={.65} roughness={.32}/></mesh>
     <mesh position={[0,.14,.12]} rotation={[.4,0,0]}><cylinderGeometry args={[.018,.018,.28,12]}/><meshPhysicalMaterial color="#8e9290" metalness={.82} roughness={.22}/></mesh>
     <mesh position={[0,.26,.02]}><sphereGeometry args={[.035,14,10]}/><meshPhysicalMaterial color="#d4c7ad" roughness={.45}/></mesh>
-    <HardwareLED position={[.22,.08,.12]} color={accent} size={.007} intensity=.5/>
+    <HardwareLED position={[.22,.08,.12]} color={accent} size={.007} intensity={.5}/>
   </group>;
 }
 
