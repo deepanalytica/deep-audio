@@ -9,6 +9,10 @@ on:
       - '.github/workflows/blender-premium-build.yml'
   workflow_dispatch:
 
+concurrency:
+  group: blender-premium-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
