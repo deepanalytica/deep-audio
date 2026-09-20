@@ -1,5 +1,6 @@
 import bpy
 import math
+import os
 import sys
 from pathlib import Path
 from mathutils import Vector
@@ -537,7 +538,8 @@ bpy.ops.export_scene.gltf(
     export_tangents=False,
     export_animations=False,
 )
-bpy.ops.render.render(write_still=True)
+if os.environ.get("DMP_SKIP_PREVIEW") != "1":
+    bpy.ops.render.render(write_still=True)
 bpy.ops.wm.save_as_mainfile(filepath=str(BLEND_PATH))
 
 # Measured scene statistics for the manifest and quality gate.
