@@ -13,6 +13,8 @@ export const useStudioStore = create((set) => ({
   key:'C',
   progression:'I–V–vi–IV',
   roomSound:'Studio Live',
+  masteringProfile:'Natural',
+  masteringControls:{tone:0,dynamicEq:28,compression:18,saturation:8,stereo:100,ceiling:-1},
   activePlayers:[],
   presets:{
     drummer:'Neo Soul Dry',
@@ -35,6 +37,10 @@ export const useStudioStore = create((set) => ({
   setKey:(key)=>set({key}),
   setProgression:(progression)=>set({progression}),
   setRoomSound:(roomSound)=>set({roomSound}),
+  setMasteringProfile:(masteringProfile)=>set({masteringProfile}),
+  setMasteringControl:(control,value)=>set((s)=>({
+    masteringControls:{...s.masteringControls,[control]:value}
+  })),
   togglePlayer:(id)=>set((s)=>({
     activePlayers:s.activePlayers.includes(id)
       ? s.activePlayers.filter((x)=>x!==id)
