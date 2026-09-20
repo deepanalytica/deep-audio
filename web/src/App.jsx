@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import StudioScene from './scene/StudioScene.jsx';
 import Hud from './ui/Hud.jsx';
 import BootSequence from './ui/BootSequence.jsx';
+import RoomTransition from './ui/RoomTransition.jsx';
 import { useStudioStore } from './store.js';
 
 export default function App(){
@@ -21,6 +22,7 @@ export default function App(){
       <Suspense fallback={null}><StudioScene/></Suspense>
     </Canvas>
     {ready&&<Hud/>}
+    {ready&&<RoomTransition/>}
     {!ready&&<BootSequence onReady={finishBoot}/>}
   </main>;
 }
