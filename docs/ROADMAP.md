@@ -2,6 +2,31 @@
 
 The roadmap is ordered by risk, not by visual excitement.
 
+## Immersive Asset Pipeline
+
+Status: first Blender vertical slice implemented and integrated; review/optimization remains.
+
+Current slice:
+
+- `MASTERING_ROOM_001` real-scale procedural benchmark;
+- original mastering-console hero fallback with semantic sections;
+- runtime `AssetModel` / registry / fallback contract;
+- manifest with provenance and target GLB paths;
+- smooth camera focus and contextual mastering HUD;
+- demo metering labelled as non-live data;
+- visual-twin / acoustic-twin boundary documented.
+- Blender 5.2.1 LTS source, GLB export and visual review render;
+- 99,184-triangle modular room with 17 materials and applied mesh transforms.
+
+Next gate:
+
+- repeat the Blender MCP smoke test whenever a new session attaches;
+- profile the integrated monolithic room and decide whether split hero exports reduce load/draw-call cost;
+- add image textures only where they materially outperform the current physically coherent procedural materials;
+- compare future GLB revisions against the procedural fallback and eight camera references.
+
+Do not start the remaining four Blender rooms before Mastering Room 001 passes the full GLB quality gate.
+
 ## M0 — Foundation
 
 Status: implemented in the desktop foundation branch.
