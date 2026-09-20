@@ -18,15 +18,15 @@ jobs:
         with:
           node-version: 22
       - name: JavaScript syntax
-        run: node --check web/app.js
+        run: node --check web/studio-v2.js
       - name: Static file integrity
         shell: bash
         run: |
           test -s web/index.html
-          test -s web/styles.css
-          test -s web/app.js
+          test -s web/studio-v2.css
+          test -s web/studio-v2.js
           grep -q 'id="studio"' web/index.html
-          grep -q 'type="module" src="./app.js"' web/index.html
-          grep -q "three@0.186.0" web/app.js
-          grep -q "SESSION PLAYERS" web/app.js
-          grep -q "HARMONY LAB" web/app.js
+          grep -q 'studio-v2.js?v=20260920-2' web/index.html
+          grep -q "three@0.186.0" web/studio-v2.js
+          grep -q "SESSION PLAYERS" web/studio-v2.js
+          grep -q "HARMONY LAB" web/studio-v2.js
