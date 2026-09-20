@@ -149,8 +149,18 @@ function RoomPlayers({room,players,accent}){
 
 export default function StudioScene(){
   const room=useStudioStore((s)=>s.room);
+  const criticalAssetReady=useStudioStore((s)=>s.startup.criticalAssetReady);
+  const markFirstFrameReady=useStudioStore((s)=>s.markFirstFrameReady);
+  const startupFrameCommitted=useRef(false);
   const players=useStudioStore((s)=>s.activePlayers);
   const cfg=ROOMS[room];
+  useFrame(()=>{
+    if(criticalAssetReady&&!startupFrameCommitted.current){
+      startupFrameCommitted.current=true;
+      markFirstFrameReady();
+    }
+  });
+
   const fallbacks={
     practice:<><RoomShell accent={cfg.accent} variant={room}/><PracticeRoom accent={cfg.accent}/></>,
     record:<><RoomShell accent={cfg.accent} variant={room}/><RecordRoom accent={cfg.accent}/></>,
