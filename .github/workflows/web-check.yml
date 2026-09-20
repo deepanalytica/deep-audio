@@ -1,0 +1,32 @@
+name: Web Studio Check
+on:
+  push:
+    branches: [feature/immersive-studio-v2, main]
+    paths:
+      - "web/**"
+      - ".github/workflows/web-check.yml"
+  pull_request:
+    paths:
+      - "web/**"
+      - ".github/workflows/web-check.yml"
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: JavaScript syntax
+        run: node --check web/app.js
+      - name: Static file integrity
+        shell: bash
+        run: |
+          test -s web/index.html
+          test -s web/styles.css
+          test -s web/app.js
+          grep -q 'id="studio"' web/index.html
+          grep -q 'type="module" src="./app.js"' web/index.html
+          grep -q "three@0.186.0" web/app.js
+          grep -q "SESSION PLAYERS" web/app.js
+          grep -q "HARMONY LAB" web/app.js

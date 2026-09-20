@@ -1,77 +1,107 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#08090b">
-<title>Deep Music Producer — Studio Preview</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#070809">
+<meta name="description" content="Deep Music Producer — immersive studio experience">
+<title>Deep Music Producer — Immersive Studio</title>
 <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-<div id="app" data-room="practice">
-  <div id="scene"><canvas id="three"></canvas><div id="room-art"></div><div class="grade"></div></div>
+<div id="app" class="room-practice">
+  <canvas id="studio"></canvas>
+  <div class="vignette"></div>
+  <div class="grain"></div>
 
   <header class="topbar">
-    <a class="brand" href="#"><span class="wave"><i></i><i></i><i></i><i></i><i></i></span><span><b>DEEP MUSIC</b><small>PRODUCER</small></span></a>
-    <div class="project"><span class="dot"></span><span>NUEVA SESIÓN</span></div>
-    <div class="device"><small>PREVIEW WEB</small><b>Studio Experience</b></div>
-    <a class="repo" href="https://github.com/deepanalytica/deep-audio" target="_blank" rel="noreferrer">GitHub ↗</a>
+    <a class="brand" href="./" aria-label="Deep Music Producer">
+      <span class="brand-mark"><i></i><i></i><i></i><i></i><i></i></span>
+      <span><b>DEEP MUSIC</b><small>PRODUCER</small></span>
+    </a>
+    <div class="session-pill"><i></i><span>NUEVA SESIÓN</span></div>
+    <div class="top-actions">
+      <button id="studioMapButton" class="ghost-button">Mapa del estudio</button>
+      <button id="audioButton" class="ghost-button">Audio <span id="audioState">OFF</span></button>
+      <a class="github-link" href="https://github.com/deepanalytica/deep-audio" target="_blank" rel="noreferrer">GitHub ↗</a>
+    </div>
   </header>
 
-  <aside class="rooms glass">
-    <small>SALAS</small>
-    <button class="room active" data-room="practice"><em>01</em><span><b>Ensayo</b><i>Toca</i></span></button>
-    <button class="room" data-room="record"><em>02</em><span><b>Grabación</b><i>Captura</i></span></button>
-    <button class="room" data-room="production"><em>03</em><span><b>Producción</b><i>Construye</i></span></button>
-    <button class="room" data-room="mix"><em>04</em><span><b>Mezcla</b><i>Equilibra</i></span></button>
-    <button class="room" data-room="master"><em>05</em><span><b>Master</b><i>Termina</i></span></button>
-  </aside>
+  <nav class="room-rail" aria-label="Salas del estudio">
+    <button class="room-nav active" data-room="practice"><span>01</span><b>Ensayo</b></button>
+    <button class="room-nav" data-room="record"><span>02</span><b>Grabación</b></button>
+    <button class="room-nav" data-room="production"><span>03</span><b>Producción</b></button>
+    <button class="room-nav" data-room="mix"><span>04</span><b>Mezcla</b></button>
+    <button class="room-nav" data-room="master"><span>05</span><b>Master</b></button>
+  </nav>
 
-  <main class="workspace">
-    <section class="intro">
-      <small id="kicker">SALA 01 · ENSAYO</small>
-      <h1 id="title">Toca antes de configurar.</h1>
-      <p id="description">Entra, conecta el instrumento y empieza. La ingeniería aparece sólo cuando la necesitas.</p>
-    </section>
+  <section class="room-title" id="roomTitle">
+    <small id="roomEyebrow">SALA 01 · ENSAYO</small>
+    <h1 id="roomHeading">Entra. Escucha. Toca.</h1>
+    <p id="roomCopy">Muévete por la sala, acércate a los instrumentos y construye una sesión desde el espacio.</p>
+  </section>
 
-    <section class="stage glass">
-      <div class="object-grid" id="object-grid"></div>
-      <div class="input-strip">
-        <div><small>INPUT 1</small><b id="db">−18.4 dB</b></div>
-        <div class="meter"><i id="meter"></i></div>
-        <span>48 kHz · 128 samples</span>
-      </div>
-    </section>
+  <div class="movement-hint" id="movementHint">
+    <span>ARRASTRA</span> para mirar · <span>WASD</span> para moverte · <span>CLIC</span> para interactuar
+  </div>
 
-    <section class="chain glass">
-      <div class="chain-title"><small>SONIDO</small><b id="sound-name">Studio Bass</b></div>
-      <button class="preset active" data-sound="Studio Bass">Natural</button>
-      <button class="preset" data-sound="Tight Bass">Definido</button>
-      <button class="preset" data-sound="Warm Amp">Cálido</button>
-      <button class="preset" data-sound="Dry">Dry</button>
-      <button class="advanced">Controles avanzados ↗</button>
-    </section>
-  </main>
+  <section class="quick-actions">
+    <button data-panel="musicians"><span>✦</span><b>Músicos</b><small>Convocar sesión</small></button>
+    <button data-panel="sounds"><span>◫</span><b>Sonidos</b><small>Instrumentos & presets</small></button>
+    <button data-panel="harmony"><span>⌁</span><b>Harmony Lab</b><small>Acordes & progresiones</small></button>
+    <button data-panel="roomsound"><span>◉</span><b>Room</b><small>Acústica inmersiva</small></button>
+  </section>
 
-  <aside class="inspector glass">
-    <small>SESIÓN</small><h2 id="session-title">Ensayo rápido</h2>
-    <label>Tempo <output id="bpm-out">120 BPM</output></label>
-    <input id="bpm" type="range" min="40" max="240" value="120">
-    <div class="toggle-row"><span>Metrónomo</span><button class="toggle" id="metro"><i></i></button></div>
-    <div class="toggle-row"><span>Retorno</span><button class="toggle on" id="monitor"><i></i></button></div>
-    <div class="engineer">
-      <span class="orb"></span><div><small>INGENIERO</small><b id="engineer-title">Todo listo para tocar.</b><p id="engineer-copy">No veo clipping. Puedes empezar y ajustar después.</p></div>
+  <aside id="contextPanel" class="context-panel">
+    <div class="panel-head">
+      <div><small id="contextType">OBJETO</small><h2 id="contextTitle">Explora el estudio</h2></div>
+      <button id="closeContext" aria-label="Cerrar">×</button>
     </div>
-    <p class="preview-note">Esta es la preview interactiva de UI. ASIO, grabación 24-bit y DSP viven en el ejecutable Windows.</p>
+    <p id="contextDescription">Haz clic sobre un instrumento, amplificador, consola o músico para trabajar con él.</p>
+    <div id="contextContent" class="context-content"></div>
   </aside>
 
-  <footer class="transport glass">
-    <button class="add">＋ Canción</button>
-    <div class="clock"><b id="clock">00:00.000</b><small id="state">LISTO</small></div>
-    <div class="controls"><button id="stop">■</button><button id="play" class="play">▶</button><button id="rec" class="rec"><i></i> REC</button></div>
-    <div class="waveform" id="waveform"></div>
-    <div class="meta"><span>4/4</span><span id="bpm-bottom">120 BPM</span><span>DEMO</span></div>
+  <aside id="drawer" class="drawer">
+    <div class="drawer-head">
+      <div><small id="drawerEyebrow">SESSION PLAYERS</small><h2 id="drawerTitle">Convoca músicos de sesión</h2></div>
+      <button id="closeDrawer" aria-label="Cerrar">×</button>
+    </div>
+    <div id="drawerContent" class="drawer-content"></div>
+  </aside>
+
+  <div id="studioMap" class="studio-map">
+    <div class="map-shell">
+      <div class="map-head"><div><small>DEEP MUSIC PRODUCER</small><h2>Mapa del estudio</h2></div><button id="closeMap">×</button></div>
+      <div class="map-grid">
+        <button data-map-room="practice"><span>01</span><b>Ensayo</b><small>Jam · rehearsal · ideas</small></button>
+        <button data-map-room="record"><span>02</span><b>Grabación</b><small>Tracking · vocal · amps</small></button>
+        <button data-map-room="production"><span>03</span><b>Producción</b><small>Keys · synths · arrangement</small></button>
+        <button data-map-room="mix"><span>04</span><b>Mezcla</b><small>Console · buses · reference</small></button>
+        <button data-map-room="master"><span>05</span><b>Master</b><small>Loudness · dynamics · export</small></button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="transport">
+    <div class="transport-left">
+      <button class="add-track" id="addTrack">＋ Pista</button>
+      <div class="counter"><b id="clock">00:00.000</b><small id="transportState">LISTO</small></div>
+    </div>
+    <div class="transport-center">
+      <button id="stop" class="round small">■</button>
+      <button id="play" class="round play">▶</button>
+      <button id="rec" class="record"><i></i> REC</button>
+    </div>
+    <div class="transport-right">
+      <label>BPM <input id="bpm" type="number" min="40" max="240" value="120"></label>
+      <button id="metro" class="chip">Metrónomo</button>
+      <div class="master-meter"><i id="masterMeter"></i></div>
+    </div>
   </footer>
+
+  <div id="toast" class="toast"></div>
 </div>
 
 <script type="module" src="./app.js"></script>
-</body></html>
+</body>
+</html>
