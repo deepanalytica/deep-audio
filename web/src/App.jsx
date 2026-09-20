@@ -1,12 +1,16 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useCallback, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import StudioScene from './scene/StudioScene.jsx';
 import Hud from './ui/Hud.jsx';
+import BootSequence from './ui/BootSequence.jsx';
 import { useStudioStore } from './store.js';
 
 export default function App(){
   const closeSelected=useStudioStore((s)=>s.closeSelected);
-  return <main className="app-shell">
+  const [ready,setReady]=useState(false);
+  const finishBoot=useCallback(()=>setReady(true),[]);
+
+  return <main className={'app-shell '+(ready?'app-ready':'app-loading')}>
     <Canvas
       shadows="percentage"
       dpr={[1,2]}
@@ -16,6 +20,7 @@ export default function App(){
     >
       <Suspense fallback={null}><StudioScene/></Suspense>
     </Canvas>
-    <Hud/>
+    {ready&&<Hud/>}
+    {!ready&&<BootSequence onReady={finishBoot}/>}
   </main>;
 }
