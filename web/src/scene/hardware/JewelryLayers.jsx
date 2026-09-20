@@ -15,7 +15,7 @@ import {
   SpeakerDriverDetail
 } from '../hardware/StudioHardware.jsx';
 
-function ConsoleSection({x,accent,variant={0}}){
+function ConsoleSection({x,accent,variant=0}){
   return <group position={[x,1.42,-1.13]} rotation={[-.11,0,0]}>
     <HardwareDisplay position={[0,.045,-.27]} width={.52} height={.18} title={variant===0?'TONE':variant===1?'EQ':variant===2?'DYNAMICS':variant===3?'STEREO':'LIMIT'} value={variant===4?'-0.8':'0.0'} unit={variant===4?'TP':'dB'} accent={accent} mode={variant%2?'curve':'meter'}/>
     <HardwareKnob position={[-.25,.075,.12]} size={.045} color="#aaa9a4" accent={accent}/>
