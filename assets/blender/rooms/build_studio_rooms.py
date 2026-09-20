@@ -8,6 +8,7 @@ background runner; no third-party assets or textures are required.
 from __future__ import annotations
 
 import math
+import os
 import sys
 from pathlib import Path
 
@@ -515,7 +516,8 @@ def export_room(key, cfg):
     preview_path = source_dir / f"{cfg['id']}_preview.png"
 
     bpy.context.scene.render.filepath = str(preview_path)
-    bpy.ops.render.render(write_still=True)
+    if os.environ.get("DMP_SKIP_PREVIEW") != "1":
+        bpy.ops.render.render(write_still=True)
     bpy.ops.wm.save_as_mainfile(filepath=str(blend_path))
     bpy.ops.export_scene.gltf(
         filepath=str(glb_path),
