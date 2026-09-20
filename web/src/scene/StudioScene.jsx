@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import { CameraControls, ContactShadows, Environment, Lightformer, RoundedBox, Sparkles } from '@react-three/drei';
+import { CameraControls, ContactShadows, RoundedBox, Sparkles } from '@react-three/drei';
 import { Bloom, EffectComposer, Noise, Vignette } from '@react-three/postprocessing';
 import { useStudioStore } from '../store.js';
 import { ROOMS } from '../data.js';
@@ -10,6 +10,7 @@ import {
   SynthRack, ConsoleDesk, Microphone, SessionPlayer, AcousticPanel
 } from './objects.jsx';
 import MasteringRoom001 from './mastering/MasteringRoom.jsx';
+import ImmersiveRoom from './rooms/ImmersiveRoom.jsx';
 
 function CameraRig(){
   const controls=useRef();
@@ -75,7 +76,7 @@ function MeterScreen({position=[0,2.3,-6.8],accent='#3b9bc1',master=false}){
   </group>;
 }
 
-function PracticeRoom({accent,players}){
+function PracticeRoom({accent}){
   return <group>
     <DrumKit position={[0,0,-3.7]} accent={accent}/>
     <Amplifier position={[-4.75,.85,-4.4]} label="Bass Stack"/>
@@ -85,14 +86,10 @@ function PracticeRoom({accent,players}){
     <Keyboard position={[3.65,0,-7.3]} label="Practice Keys"/>
     <StudioMonitor position={[-2.8,1,-7.45]} scale={.78}/>
     <StudioMonitor position={[2.8,1,-7.45]} scale={.78}/>
-    <SessionPlayer role="drummer" active={players.includes('drummer')} position={[0,0,-4.25]} accent={accent}/>
-    <SessionPlayer role="bassist" active={players.includes('bassist')} position={[-3.4,0,-2.8]} accent="#b98758"/>
-    <SessionPlayer role="guitarist" active={players.includes('guitarist')} position={[3.5,0,-2.8]} accent="#a96a55"/>
-    <SessionPlayer role="keys" active={players.includes('keys')} position={[3.7,0,-6.95]} accent="#6d82a1"/>
   </group>;
 }
 
-function RecordRoom({accent,players}){
+function RecordRoom({accent}){
   return <group>
     <DrumKit position={[-2.1,0,-4.2]} accent={accent}/>
     <Microphone position={[2.35,0,-2.8]}/>
@@ -101,13 +98,10 @@ function RecordRoom({accent,players}){
     <Amplifier position={[5.1,.85,-5.4]} label="Guitar Tracking Amp" color="#382220"/>
     <Rack position={[5.65,0,-7.1]} label="Mic Pre / Comp" accent={accent}/>
     <Guitar position={[5.2,0,-7.45]} label="Tracking Guitar" color="#8e3d2e"/>
-    <SessionPlayer role="drummer" active={players.includes('drummer')} position={[-2.1,0,-4.75]} accent={accent}/>
-    <SessionPlayer role="bassist" active={players.includes('bassist')} position={[-4,0,-2.8]} accent="#a76b55"/>
-    <SessionPlayer role="guitarist" active={players.includes('guitarist')} position={[4.0,0,-3]} accent="#a76b55"/>
   </group>;
 }
 
-function ProductionRoom({accent,players}){
+function ProductionRoom({accent}){
   return <group>
     <Keyboard position={[0,0,-3.2]} label="Studio Grand / Keys"/>
     <SynthRack position={[-4.7,0,-5.25]} accent={accent}/>
@@ -116,9 +110,6 @@ function ProductionRoom({accent,players}){
     <Rack position={[5.55,0,-7]} label="Texture / FX Rack" accent={accent}/>
     <StudioMonitor position={[-2.8,1,-7.45]} scale={.78}/>
     <StudioMonitor position={[2.8,1,-7.45]} scale={.78}/>
-    <SessionPlayer role="keys" active={players.includes('keys')} position={[0,0,-4]} accent="#7764b5"/>
-    <SessionPlayer role="synth" active={players.includes('synth')} position={[-4.25,0,-3.2]} accent={accent}/>
-    <SessionPlayer role="guitarist" active={players.includes('guitarist')} position={[4.25,0,-3.1]} accent="#9a668d"/>
   </group>;
 }
 
@@ -135,49 +126,43 @@ function MixRoom({accent}){
   </group>;
 }
 
-function MasterRoom({accent}){
-  return <group>
-    <ConsoleDesk position={[0,0,-2.9]} master accent={accent}/>
-    <StudioMonitor position={[-3.6,1.08,-6.15]} scale={1.18} label="Master Left"/>
-    <StudioMonitor position={[3.6,1.08,-6.15]} scale={1.18} label="Master Right"/>
-    <Rack position={[-5.7,0,-5.9]} label="Master EQ / Dynamics" accent={accent}/>
-    <Rack position={[5.7,0,-5.9]} label="Limiter / Metering" accent="#e1b163"/>
-    <MeterScreen accent={accent} master/>
-    <AcousticPanel position={[-6.65,3,-4.35]} rotation={[0,Math.PI/2,0]} color="#3a332a"/>
-    <AcousticPanel position={[6.65,3,-4.35]} rotation={[0,-Math.PI/2,0]} color="#3a332a"/>
-  </group>;
-}
-
-function StudioLighting({accent}){
-  return <>
-    <ambientLight intensity={.14}/>
-    <hemisphereLight args={['#d9c6ae','#0b0d0e',.75]}/>
-    <spotLight position={[0,6,3]} intensity={75} angle={.48} penumbra={.62} decay={1.4} distance={24} color="#f6dfbd" castShadow shadow-mapSize={[1024,1024]}/>
-    <pointLight position={[-4.5,3,-2]} intensity={22} distance={10} decay={2} color={accent}/>
-    <pointLight position={[4.4,2.6,-1.5]} intensity={14} distance={10} decay={2} color="#6f8fa5"/>
-    <Environment resolution={128}>
-      <Lightformer intensity={2.2} color="#fff2dc" position={[0,5,-3]} scale={[6,1,1]} rotation-x={Math.PI/2}/>
-      <Lightformer intensity={1.2} color={accent} position={[-5,2,-1]} scale={[2,3,1]} rotation-y={Math.PI/2}/>
-      <Lightformer intensity={.8} color="#8aa7b8" position={[5,2,-1]} scale={[2,3,1]} rotation-y={-Math.PI/2}/>
-    </Environment>
+function RoomPlayers({room,players,accent}){
+  if(room==='practice')return <>
+    <SessionPlayer role="drummer" active={players.includes('drummer')} position={[0,0,-3.45]} accent={accent}/>
+    <SessionPlayer role="bassist" active={players.includes('bassist')} position={[-3.4,0,-1.35]} accent="#b98758"/>
+    <SessionPlayer role="guitarist" active={players.includes('guitarist')} position={[3.45,0,-1.35]} accent="#a96a55"/>
+    <SessionPlayer role="keys" active={players.includes('keys')} position={[2.35,0,-5.2]} accent="#6d82a1"/>
   </>;
+  if(room==='record')return <>
+    <SessionPlayer role="drummer" active={players.includes('drummer')} position={[-1.65,0,-3.65]} accent={accent}/>
+    <SessionPlayer role="bassist" active={players.includes('bassist')} position={[-3.65,0,-1.4]} accent="#a76b55"/>
+    <SessionPlayer role="guitarist" active={players.includes('guitarist')} position={[.15,0,-1.6]} accent="#a76b55"/>
+  </>;
+  if(room==='production')return <>
+    <SessionPlayer role="keys" active={players.includes('keys')} position={[0,0,-1.75]} accent="#7764b5"/>
+    <SessionPlayer role="synth" active={players.includes('synth')} position={[-3.15,0,-2.7]} accent={accent}/>
+    <SessionPlayer role="guitarist" active={players.includes('guitarist')} position={[3.15,0,-2.5]} accent="#9a668d"/>
+  </>;
+  return null;
 }
 
 export default function StudioScene(){
   const room=useStudioStore((s)=>s.room);
   const players=useStudioStore((s)=>s.activePlayers);
   const cfg=ROOMS[room];
+  const fallbacks={
+    practice:<><RoomShell accent={cfg.accent} variant={room}/><PracticeRoom accent={cfg.accent}/></>,
+    record:<><RoomShell accent={cfg.accent} variant={room}/><RecordRoom accent={cfg.accent}/></>,
+    production:<><RoomShell accent={cfg.accent} variant={room}/><ProductionRoom accent={cfg.accent}/></>,
+    mix:<><RoomShell accent={cfg.accent} variant={room}/><MixRoom accent={cfg.accent}/></>
+  };
 
   return <>
     <color attach="background" args={[cfg.bg]}/>
     <fog attach="fog" args={[cfg.bg,9,24]}/>
     <CameraRig/>
-    {room!=='master'&&<StudioLighting accent={cfg.accent}/>}
-    {room!=='master'&&<RoomShell accent={cfg.accent} variant={room}/>}
-    {room==='practice'&&<PracticeRoom accent={cfg.accent} players={players}/>}
-    {room==='record'&&<RecordRoom accent={cfg.accent} players={players}/>}
-    {room==='production'&&<ProductionRoom accent={cfg.accent} players={players}/>}
-    {room==='mix'&&<MixRoom accent={cfg.accent}/>}
+    {room!=='master'&&<ImmersiveRoom room={room} fallback={fallbacks[room]}/>}
+    {room!=='master'&&<RoomPlayers room={room} players={players} accent={cfg.accent}/>}
     {room==='master'&&<MasteringRoom001/>}
     <ContactShadows position={[0,.035,-2.5]} opacity={.48} scale={room==='master'?9:16} blur={2.4} far={8} color="#000000"/>
     <Sparkles count={room==='production'?34:14} scale={[13,5,12]} size={.7} speed={.12} opacity={.12} color={cfg.accent}/>

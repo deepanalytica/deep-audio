@@ -3,6 +3,38 @@ const baseUrl = import.meta.env.BASE_URL.endsWith('/')
   : `${import.meta.env.BASE_URL}/`;
 
 export const ASSET_REGISTRY = Object.freeze({
+  practice_room_001: {
+    id: 'practice_room_001',
+    name: 'Practice Room 001',
+    category: 'room',
+    version: '0.1.0',
+    glb: 'models/practice/room/practice_room_001.glb',
+    available: true
+  },
+  recording_room_001: {
+    id: 'recording_room_001',
+    name: 'Recording Room 001',
+    category: 'room',
+    version: '0.1.0',
+    glb: 'models/recording/room/recording_room_001.glb',
+    available: true
+  },
+  production_room_001: {
+    id: 'production_room_001',
+    name: 'Production Room 001',
+    category: 'room',
+    version: '0.1.0',
+    glb: 'models/production/room/production_room_001.glb',
+    available: true
+  },
+  mix_room_001: {
+    id: 'mix_room_001',
+    name: 'Mix Room 001',
+    category: 'room',
+    version: '0.1.0',
+    glb: 'models/mix/room/mix_room_001.glb',
+    available: true
+  },
   mastering_room_001: {
     id: 'mastering_room_001',
     name: 'Mastering Room 001',
