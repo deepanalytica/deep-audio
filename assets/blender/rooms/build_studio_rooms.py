@@ -494,8 +494,8 @@ def apply_modifiers_and_validate():
 def configure_scene(cfg):
     scene = bpy.context.scene
     scene.render.engine = "BLENDER_EEVEE"
-    scene.render.resolution_x = 1440
-    scene.render.resolution_y = 900
+    scene.render.resolution_x = 960
+    scene.render.resolution_y = 600
     scene.render.resolution_percentage = 100
     scene.render.image_settings.file_format = "PNG"
     scene.render.film_transparent = False
