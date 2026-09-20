@@ -86,7 +86,7 @@ function InteractiveAsset({ meta, children, ...props }) {
     }}
   >
     {children}
-    {(hovered || selected) && <pointLight position={[0, 1.1, 0.35]} color={WARM} intensity={0.7} distance={2.4}/>} 
+    {(hovered || selected) && <pointLight position={[0, 1.1, 0.35]} color={WARM} intensity={0.7} distance={2.4}/>}
   </group>;
 }
 
