@@ -7,7 +7,7 @@ export const ASSET_REGISTRY = Object.freeze({
     id: 'practice_room_001',
     name: 'Practice Room 001',
     category: 'room',
-    version: '0.1.0',
+    version: '2.0.0',
     glb: 'models/practice/room/practice_room_001.glb',
     available: true
   },
@@ -15,7 +15,7 @@ export const ASSET_REGISTRY = Object.freeze({
     id: 'recording_room_001',
     name: 'Recording Room 001',
     category: 'room',
-    version: '0.1.0',
+    version: '2.0.0',
     glb: 'models/recording/room/recording_room_001.glb',
     available: true
   },
@@ -23,7 +23,7 @@ export const ASSET_REGISTRY = Object.freeze({
     id: 'production_room_001',
     name: 'Production Room 001',
     category: 'room',
-    version: '0.1.0',
+    version: '2.0.0',
     glb: 'models/production/room/production_room_001.glb',
     available: true
   },
@@ -31,7 +31,7 @@ export const ASSET_REGISTRY = Object.freeze({
     id: 'mix_room_001',
     name: 'Mix Room 001',
     category: 'room',
-    version: '0.1.0',
+    version: '2.0.0',
     glb: 'models/mix/room/mix_room_001.glb',
     available: true
   },
@@ -39,7 +39,7 @@ export const ASSET_REGISTRY = Object.freeze({
     id: 'mastering_room_001',
     name: 'Mastering Room 001',
     category: 'room',
-    version: '0.1.0',
+    version: '1.0.0',
     glb: 'models/mastering/room/mastering_room_001.glb',
     available: true
   },
