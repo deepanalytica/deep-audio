@@ -9,10 +9,17 @@ AudioEngine::AudioEngine()
 {
     formatManager.registerBasicFormats();
     readAheadThread.startThread();
+
+    audioSettingsFile = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
+                            .getChildFile ("Deep Audio Studio")
+                            .getChildFile ("audio-device.xml");
 }
 
 AudioEngine::~AudioEngine()
 {
+    persistAudioDeviceState();
+    deviceManager.removeChangeListener (this);
+
     recorder.stop();
     backingTransport.stop();
     backingTransport.setSource (nullptr);
@@ -23,12 +30,23 @@ AudioEngine::~AudioEngine()
 
 juce::Result AudioEngine::initialise()
 {
-    const auto error = deviceManager.initialise (1, 2, nullptr, true);
+    std::unique_ptr<juce::XmlElement> savedState;
+
+    if (audioSettingsFile.existsAsFile())
+        savedState = juce::XmlDocument::parse (audioSettingsFile);
+
+    const auto error = deviceManager.initialise (1, 2, savedState.get(), true);
 
     if (error.isNotEmpty())
         return juce::Result::fail (error);
 
+    if (savedState == nullptr)
+        applyFirstRunDefaults();
+
+    deviceManager.addChangeListener (this);
     deviceManager.addAudioCallback (this);
+    persistAudioDeviceState();
+
     return juce::Result::ok();
 }
 
@@ -231,6 +249,46 @@ void AudioEngine::audioDeviceIOCallbackWithContext (const float* const* inputCha
 
     if (metronomeEnabled.load())
         renderMetronome (outputChannelData, numOutputChannels, numSamples);
+}
+
+void AudioEngine::changeListenerCallback (juce::ChangeBroadcaster*)
+{
+    persistAudioDeviceState();
+}
+
+void AudioEngine::applyFirstRunDefaults()
+{
+    auto* device = deviceManager.getCurrentAudioDevice();
+
+    if (device == nullptr)
+        return;
+
+    auto setup = deviceManager.getAudioDeviceSetup();
+    bool changed = false;
+
+    if (device->getAvailableSampleRates().contains (48000.0))
+    {
+        setup.sampleRate = 48000.0;
+        changed = true;
+    }
+
+    if (device->getAvailableBufferSizes().contains (128))
+    {
+        setup.bufferSize = 128;
+        changed = true;
+    }
+
+    if (changed)
+        deviceManager.setAudioDeviceSetup (setup, true);
+}
+
+void AudioEngine::persistAudioDeviceState()
+{
+    if (auto state = deviceManager.createStateXml())
+    {
+        audioSettingsFile.getParentDirectory().createDirectory();
+        audioSettingsFile.replaceWithText (state->toString());
+    }
 }
 
 void AudioEngine::configureToneForCurrentSampleRate()

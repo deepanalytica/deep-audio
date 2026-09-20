@@ -3,7 +3,8 @@
 #include <JuceHeader.h>
 #include "Recorder.h"
 
-class AudioEngine final : private juce::AudioIODeviceCallback
+class AudioEngine final : private juce::AudioIODeviceCallback,
+                          private juce::ChangeListener
 {
 public:
     enum class TonePreset
@@ -60,7 +61,11 @@ private:
                                            int numSamples,
                                            const juce::AudioIODeviceCallbackContext&) override;
 
+    void changeListenerCallback (juce::ChangeBroadcaster*) override;
     void configureToneForCurrentSampleRate();
+    void applyFirstRunDefaults();
+    void persistAudioDeviceState();
+
     void renderMetronome (float* const* outputChannelData,
                           int numOutputChannels,
                           int numSamples);
@@ -73,6 +78,7 @@ private:
 
     Recorder recorder;
     juce::File lastRecording;
+    juce::File audioSettingsFile;
 
     juce::AudioBuffer<float> liveBuffer;
     juce::dsp::IIR::Filter<float> highPass;

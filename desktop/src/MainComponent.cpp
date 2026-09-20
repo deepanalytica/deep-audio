@@ -5,7 +5,7 @@ MainComponent::MainComponent()
                   0, 2,
                   0, 2,
                   false, false,
-                  true, false)
+                  false, false)
 {
     juce::LookAndFeel::setDefaultLookAndFeel (&lookAndFeel);
 
