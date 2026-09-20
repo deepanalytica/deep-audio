@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export const useStudioStore = create((set) => ({
+export const useStudioStore = create((set,get) => ({
   room:'practice',
   selected:null,
   drawer:null,
@@ -16,6 +16,7 @@ export const useStudioStore = create((set) => ({
   masteringProfile:'Natural',
   masteringControls:{tone:0,dynamicEq:28,compression:18,saturation:8,stereo:100,ceiling:-1},
   activePlayers:[],
+  roomTransition:{active:false,target:null,id:0},
   startup:{
     criticalAssetReady:false,
     criticalAssetId:null,
@@ -29,7 +30,19 @@ export const useStudioStore = create((set) => ({
     keys:'Warm Rhodes',
     synth:'Poly Analog'
   },
-  setRoom:(room)=>set({room,selected:null,mapOpen:false}),
+  setRoom:(room)=>{
+    if(room===get().room||get().roomTransition.target===room)return;
+    const id=(get().roomTransition.id||0)+1;
+    set({roomTransition:{active:true,target:room,id},selected:null,mapOpen:false,drawer:null});
+    window.setTimeout(()=>{
+      if(get().roomTransition.id!==id)return;
+      set({room,selected:null,mapOpen:false});
+    },180);
+    window.setTimeout(()=>{
+      if(get().roomTransition.id!==id)return;
+      set({roomTransition:{active:false,target:null,id}});
+    },760);
+  },
   select:(selected)=>set({selected}),
   closeSelected:()=>set({selected:null}),
   openDrawer:(drawer)=>set({drawer}),
