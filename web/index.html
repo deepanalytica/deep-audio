@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#08090b">
+<title>Deep Music Producer — Studio Preview</title>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<div id="app" data-room="practice">
+  <div id="scene"><canvas id="three"></canvas><div id="room-art"></div><div class="grade"></div></div>
+
+  <header class="topbar">
+    <a class="brand" href="#"><span class="wave"><i></i><i></i><i></i><i></i><i></i></span><span><b>DEEP MUSIC</b><small>PRODUCER</small></span></a>
+    <div class="project"><span class="dot"></span><span>NUEVA SESIÓN</span></div>
+    <div class="device"><small>PREVIEW WEB</small><b>Studio Experience</b></div>
+    <a class="repo" href="https://github.com/deepanalytica/deep-audio" target="_blank" rel="noreferrer">GitHub ↗</a>
+  </header>
+
+  <aside class="rooms glass">
+    <small>SALAS</small>
+    <button class="room active" data-room="practice"><em>01</em><span><b>Ensayo</b><i>Toca</i></span></button>
+    <button class="room" data-room="record"><em>02</em><span><b>Grabación</b><i>Captura</i></span></button>
+    <button class="room" data-room="production"><em>03</em><span><b>Producción</b><i>Construye</i></span></button>
+    <button class="room" data-room="mix"><em>04</em><span><b>Mezcla</b><i>Equilibra</i></span></button>
+    <button class="room" data-room="master"><em>05</em><span><b>Master</b><i>Termina</i></span></button>
+  </aside>
+
+  <main class="workspace">
+    <section class="intro">
+      <small id="kicker">SALA 01 · ENSAYO</small>
+      <h1 id="title">Toca antes de configurar.</h1>
+      <p id="description">Entra, conecta el instrumento y empieza. La ingeniería aparece sólo cuando la necesitas.</p>
+    </section>
+
+    <section class="stage glass">
+      <div class="object-grid" id="object-grid"></div>
+      <div class="input-strip">
+        <div><small>INPUT 1</small><b id="db">−18.4 dB</b></div>
+        <div class="meter"><i id="meter"></i></div>
+        <span>48 kHz · 128 samples</span>
+      </div>
+    </section>
+
+    <section class="chain glass">
+      <div class="chain-title"><small>SONIDO</small><b id="sound-name">Studio Bass</b></div>
+      <button class="preset active" data-sound="Studio Bass">Natural</button>
+      <button class="preset" data-sound="Tight Bass">Definido</button>
+      <button class="preset" data-sound="Warm Amp">Cálido</button>
+      <button class="preset" data-sound="Dry">Dry</button>
+      <button class="advanced">Controles avanzados ↗</button>
+    </section>
+  </main>
+
+  <aside class="inspector glass">
+    <small>SESIÓN</small><h2 id="session-title">Ensayo rápido</h2>
+    <label>Tempo <output id="bpm-out">120 BPM</output></label>
+    <input id="bpm" type="range" min="40" max="240" value="120">
+    <div class="toggle-row"><span>Metrónomo</span><button class="toggle" id="metro"><i></i></button></div>
+    <div class="toggle-row"><span>Retorno</span><button class="toggle on" id="monitor"><i></i></button></div>
+    <div class="engineer">
+      <span class="orb"></span><div><small>INGENIERO</small><b id="engineer-title">Todo listo para tocar.</b><p id="engineer-copy">No veo clipping. Puedes empezar y ajustar después.</p></div>
+    </div>
+    <p class="preview-note">Esta es la preview interactiva de UI. ASIO, grabación 24-bit y DSP viven en el ejecutable Windows.</p>
+  </aside>
+
+  <footer class="transport glass">
+    <button class="add">＋ Canción</button>
+    <div class="clock"><b id="clock">00:00.000</b><small id="state">LISTO</small></div>
+    <div class="controls"><button id="stop">■</button><button id="play" class="play">▶</button><button id="rec" class="rec"><i></i> REC</button></div>
+    <div class="waveform" id="waveform"></div>
+    <div class="meta"><span>4/4</span><span id="bpm-bottom">120 BPM</span><span>DEMO</span></div>
+  </footer>
+</div>
+
+<script type="module" src="./app.js"></script>
+</body></html>
