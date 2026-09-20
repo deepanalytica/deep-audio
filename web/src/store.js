@@ -16,6 +16,12 @@ export const useStudioStore = create((set) => ({
   masteringProfile:'Natural',
   masteringControls:{tone:0,dynamicEq:28,compression:18,saturation:8,stereo:100,ceiling:-1},
   activePlayers:[],
+  startup:{
+    criticalAssetReady:false,
+    criticalAssetId:null,
+    criticalAssetSource:null,
+    firstFrameReady:false
+  },
   presets:{
     drummer:'Neo Soul Dry',
     bassist:'Round Finger',
@@ -30,6 +36,17 @@ export const useStudioStore = create((set) => ({
   closeDrawer:()=>set({drawer:null}),
   setMapOpen:(mapOpen)=>set({mapOpen}),
   setAudioReady:(audioReady)=>set({audioReady}),
+  markCriticalAssetReady:(criticalAssetId,criticalAssetSource='glb')=>set((s)=>({
+    startup:{
+      ...s.startup,
+      criticalAssetReady:true,
+      criticalAssetId,
+      criticalAssetSource
+    }
+  })),
+  markFirstFrameReady:()=>set((s)=>({
+    startup:{...s.startup,firstFrameReady:true}
+  })),
   setPlaying:(playing)=>set({playing}),
   setRecording:(recording)=>set({recording}),
   setMetronome:(metronome)=>set({metronome}),
