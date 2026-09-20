@@ -1,6 +1,7 @@
-import React from 'react';
-import { Clone, useGLTF } from '@react-three/drei';
+import React, { useMemo } from 'react';
+import { useGLTF } from '@react-three/drei';
 import { getAsset, resolveAssetUrl } from './assetRegistry.js';
+import { directStudioMaterials } from '../visual/materialDirector.js';
 
 export function AssetFallback({ asset, children }) {
   return <group
@@ -11,13 +12,20 @@ export function AssetFallback({ asset, children }) {
   </group>;
 }
 
+function cloneSceneWithMaterials(scene) {
+  const clone = scene.clone(true);
+  directStudioMaterials(clone);
+  return clone;
+}
+
 function LoadedAsset({ asset }) {
   const { scene } = useGLTF(resolveAssetUrl(asset));
-  return <Clone
-    object={scene}
+  const directedScene = useMemo(() => cloneSceneWithMaterials(scene), [scene]);
+
+  return <primitive
+    object={directedScene}
     name={asset.id}
-    castShadow
-    receiveShadow
+    dispose={null}
   />;
 }
 
