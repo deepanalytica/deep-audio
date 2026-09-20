@@ -1,5 +1,6 @@
 import bpy
 import math
+import sys
 from pathlib import Path
 from mathutils import Vector
 
@@ -8,6 +9,8 @@ ROOT = Path(__file__).resolve().parents[3]
 BLEND_PATH = ROOT / "assets" / "blender" / "mastering" / "mastering_room_001.blend"
 GLB_PATH = ROOT / "web" / "public" / "models" / "mastering" / "room" / "mastering_room_001.glb"
 PREVIEW_PATH = ROOT / "assets" / "blender" / "mastering" / "mastering_room_001_preview.png"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from mastering_premium_upgrade import apply_mastering_premium_upgrade
 
 
 def reset_scene():
@@ -226,8 +229,8 @@ scene = bpy.context.scene
 scene.unit_settings.system = "METRIC"
 scene.unit_settings.scale_length = 1.0
 scene.render.engine = "BLENDER_EEVEE"
-scene.render.resolution_x = 1280
-scene.render.resolution_y = 720
+scene.render.resolution_x = 1440
+scene.render.resolution_y = 900
 scene.render.resolution_percentage = 100
 scene.render.image_settings.file_format = "PNG"
 scene.render.film_transparent = False
@@ -473,6 +476,38 @@ camera_objects = {}
 for name, (location, target, lens) in cameras.items():
     camera_objects[name] = add_camera(name, location, target, camera_collection, lens)
 scene.camera = camera_objects["camera_operator"]
+
+apply_mastering_premium_upgrade({
+    "box": box,
+    "cylinder": cylinder,
+    "torus": torus,
+    "screw": screw,
+    "knob": knob,
+    "led": led,
+    "add_light": add_light,
+    "add_camera": add_camera,
+    "walnut": walnut,
+    "walnut_edge": walnut_edge,
+    "dark_metal": dark_metal,
+    "painted_metal": painted_metal,
+    "brushed": brushed,
+    "brass": brass,
+    "fabric": fabric,
+    "rubber": rubber,
+    "ivory": ivory,
+    "led_green": led_green,
+    "led_amber": led_amber,
+    "led_red": led_red,
+    "led_blue": led_blue,
+    "console_collection": console_collection,
+    "monitor_collection": monitor_collection,
+    "rack_collection": rack_collection,
+    "architecture": architecture,
+    "furniture_collection": furniture_collection,
+    "props_collection": props_collection,
+    "lighting_collection": lighting_collection,
+    "camera_collection": camera_collection,
+})
 
 # Apply mesh rotation/scale while preserving useful object origins.
 for obj in list(bpy.data.objects):
