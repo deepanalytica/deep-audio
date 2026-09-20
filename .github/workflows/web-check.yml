@@ -1,7 +1,7 @@
 name: Web Studio Check
 on:
   push:
-    branches: [feature/immersive-studio-v2, main]
+    branches: [main, feature/studio-v3-r3f]
     paths:
       - "web/**"
       - ".github/workflows/web-check.yml"
@@ -10,24 +10,24 @@ on:
       - "web/**"
       - ".github/workflows/web-check.yml"
 jobs:
-  check:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: JavaScript syntax
-        run: node --check web/studio-v2.js
-      - name: Static file integrity
+          cache: npm
+          cache-dependency-path: web/package.json
+      - name: Install
+        working-directory: web
+        run: npm install --no-audit --no-fund
+      - name: Production build
+        working-directory: web
+        run: npm run build
+      - name: Validate output
         shell: bash
         run: |
-          test -s web/index.html
-          test -s web/studio-v2.css
-          test -s web/studio-v2.js
-          grep -q 'id="studio"' web/index.html
-          grep -q 'studio-v2.js?v=20260920-2' web/index.html
-          grep -q "./vendor/three.module.js" web/studio-v2.js
-          test -s web/vendor/three.module.js
-          grep -q "SESSION PLAYERS" web/studio-v2.js
-          grep -q "HARMONY LAB" web/studio-v2.js
+          test -s web/dist/index.html
+          test -d web/dist/assets
+          grep -q "Deep Music Producer" web/dist/index.html
