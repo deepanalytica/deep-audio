@@ -1,118 +1,19 @@
 <!doctype html>
 <html lang="es">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#070809">
-<meta name="description" content="Deep Music Producer — immersive studio experience">
-<title>Deep Music Producer — Immersive Studio</title>
-<style>
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#070809;color:#f3f0e9;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
-#app{position:relative;width:100vw;height:100vh;min-width:980px;min-height:640px;background:#070809;overflow:hidden}
-#studio{position:absolute;inset:0;width:100%;height:100%;display:block;background:#070809}
-.topbar{position:absolute;z-index:20;top:0;left:0;right:0;height:68px;display:flex;align-items:center;padding:0 26px;background:rgba(6,7,8,.82);border-bottom:1px solid rgba(255,255,255,.12)}
-.room-rail{position:absolute;z-index:14;top:90px;left:22px;width:94px}
-.context-panel{position:absolute;right:24px;top:90px;transform:translateX(calc(100% + 40px));opacity:0}
-.drawer{position:absolute;right:24px;bottom:92px;transform:translateY(calc(100% + 120px));opacity:0}
-.studio-map{position:absolute;inset:0;opacity:0;pointer-events:none}
-.transport{position:absolute;z-index:20;left:22px;right:22px;bottom:16px}
-</style>
-<link rel="stylesheet" href="./studio-v2.css?v=20260920-2">
-</head>
-<body>
-<div id="app" class="room-practice">
-  <canvas id="studio"></canvas>
-  <div class="vignette"></div>
-  <div class="grain"></div>
-
-  <header class="topbar">
-    <a class="brand" href="./" aria-label="Deep Music Producer">
-      <span class="brand-mark"><i></i><i></i><i></i><i></i><i></i></span>
-      <span><b>DEEP MUSIC</b><small>PRODUCER</small></span>
-    </a>
-    <div class="session-pill"><i></i><span>NUEVA SESIÓN</span></div>
-    <div class="top-actions">
-      <button id="studioMapButton" class="ghost-button">Mapa del estudio</button>
-      <button id="audioButton" class="ghost-button">Audio <span id="audioState">OFF</span></button>
-      <a class="github-link" href="https://github.com/deepanalytica/deep-audio" target="_blank" rel="noreferrer">GitHub ↗</a>
-    </div>
-  </header>
-
-  <nav class="room-rail" aria-label="Salas del estudio">
-    <button class="room-nav active" data-room="practice"><span>01</span><b>Ensayo</b></button>
-    <button class="room-nav" data-room="record"><span>02</span><b>Grabación</b></button>
-    <button class="room-nav" data-room="production"><span>03</span><b>Producción</b></button>
-    <button class="room-nav" data-room="mix"><span>04</span><b>Mezcla</b></button>
-    <button class="room-nav" data-room="master"><span>05</span><b>Master</b></button>
-  </nav>
-
-  <section class="room-title" id="roomTitle">
-    <small id="roomEyebrow">SALA 01 · ENSAYO</small>
-    <h1 id="roomHeading">Entra. Escucha. Toca.</h1>
-    <p id="roomCopy">Muévete por la sala, acércate a los instrumentos y construye una sesión desde el espacio.</p>
-  </section>
-
-  <div class="movement-hint" id="movementHint">
-    <span>ARRASTRA</span> para mirar · <span>WASD</span> para moverte · <span>CLIC</span> para interactuar
-  </div>
-
-  <section class="quick-actions">
-    <button data-panel="musicians"><span>✦</span><b>Músicos</b><small>Convocar sesión</small></button>
-    <button data-panel="sounds"><span>◫</span><b>Sonidos</b><small>Instrumentos & presets</small></button>
-    <button data-panel="harmony"><span>⌁</span><b>Harmony Lab</b><small>Acordes & progresiones</small></button>
-    <button data-panel="roomsound"><span>◉</span><b>Room</b><small>Acústica inmersiva</small></button>
-  </section>
-
-  <aside id="contextPanel" class="context-panel">
-    <div class="panel-head">
-      <div><small id="contextType">OBJETO</small><h2 id="contextTitle">Explora el estudio</h2></div>
-      <button id="closeContext" aria-label="Cerrar">×</button>
-    </div>
-    <p id="contextDescription">Haz clic sobre un instrumento, amplificador, consola o músico para trabajar con él.</p>
-    <div id="contextContent" class="context-content"></div>
-  </aside>
-
-  <aside id="drawer" class="drawer">
-    <div class="drawer-head">
-      <div><small id="drawerEyebrow">SESSION PLAYERS</small><h2 id="drawerTitle">Convoca músicos de sesión</h2></div>
-      <button id="closeDrawer" aria-label="Cerrar">×</button>
-    </div>
-    <div id="drawerContent" class="drawer-content"></div>
-  </aside>
-
-  <div id="studioMap" class="studio-map">
-    <div class="map-shell">
-      <div class="map-head"><div><small>DEEP MUSIC PRODUCER</small><h2>Mapa del estudio</h2></div><button id="closeMap">×</button></div>
-      <div class="map-grid">
-        <button data-map-room="practice"><span>01</span><b>Ensayo</b><small>Jam · rehearsal · ideas</small></button>
-        <button data-map-room="record"><span>02</span><b>Grabación</b><small>Tracking · vocal · amps</small></button>
-        <button data-map-room="production"><span>03</span><b>Producción</b><small>Keys · synths · arrangement</small></button>
-        <button data-map-room="mix"><span>04</span><b>Mezcla</b><small>Console · buses · reference</small></button>
-        <button data-map-room="master"><span>05</span><b>Master</b><small>Loudness · dynamics · export</small></button>
-      </div>
-    </div>
-  </div>
-
-  <footer class="transport">
-    <div class="transport-left">
-      <button class="add-track" id="addTrack">＋ Pista</button>
-      <div class="counter"><b id="clock">00:00.000</b><small id="transportState">LISTO</small></div>
-    </div>
-    <div class="transport-center">
-      <button id="stop" class="round small">■</button>
-      <button id="play" class="round play">▶</button>
-      <button id="rec" class="record"><i></i> REC</button>
-    </div>
-    <div class="transport-right">
-      <label>BPM <input id="bpm" type="number" min="40" max="240" value="120"></label>
-      <button id="metro" class="chip">Metrónomo</button>
-      <div class="master-meter"><i id="masterMeter"></i></div>
-    </div>
-  </footer>
-
-  <div id="toast" class="toast"></div>
-</div>
-
-<script type="module" src="./studio-v2.js?v=20260920-2"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#070707" />
+    <meta name="description" content="Deep Music Producer — immersive virtual music studio." />
+    <title>Deep Music Producer — Immersive Studio</title>
+    <style>
+      html,body,#root{width:100%;height:100%;margin:0;background:#070707;overflow:hidden}
+      body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+      .boot{position:fixed;inset:0;display:grid;place-items:center;background:#070707;color:#e9e3d8;letter-spacing:.22em;font-size:11px}
+    </style>
+  </head>
+  <body>
+    <div id="root"><div class="boot">DEEP MUSIC PRODUCER</div></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>
