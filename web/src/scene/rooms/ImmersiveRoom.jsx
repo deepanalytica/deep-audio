@@ -33,8 +33,8 @@ const ROOM_DESIGNS = Object.freeze({
   },
   production: {
     assetId: 'production_room_001',
-    accent: '#1688ff',
-    warm: '#bd70dc',
+    accent: '#9474c3',
+    warm: '#d0a064',
     hitboxes: [
       { id: 'studio_keyboard', type: 'PERFORMANCE KEYS', title: 'Deep Studio Keyboard', description: 'Piano, síntesis y capas desde la posición central.', actions: ['Grand', 'Electric', 'Analog', 'Layer'], position: [0, 1.05, -1.18], size: [3.7, .55, .9], focus: { position: [0, 2.0, 1.25], target: [0, 1.0, -1.18] } },
       { id: 'synth_rack_left', type: 'MODULAR SYNTH', title: 'Modular Voice A', description: 'Osciladores, filtros, modulación y patching táctil.', actions: ['Warm Pad', 'Sequence', 'Bass', 'Init'], position: [-3.22, 1.32, -3.65], size: [1.7, 2.7, .9], focus: { position: [-1.25, 1.8, -.9], target: [-3.22, 1.3, -3.65] } },
