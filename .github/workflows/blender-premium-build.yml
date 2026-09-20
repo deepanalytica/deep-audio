@@ -1,0 +1,76 @@
+name: Blender Premium Build
+
+on:
+  push:
+    branches:
+      - feature/blender-jewelry-all-rooms
+    paths:
+      - 'assets/blender/**/*.py'
+      - '.github/workflows/blender-premium-build.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: blender-premium-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-premium-rooms:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install headless graphics libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libgl1 libx11-6 libxi6 libxrender1 libxkbcommon0 libsm6 libice6 libxfixes3 libxext6
+
+      - name: Download Blender 5.2.2
+        run: |
+          curl -L --retry 3 --retry-delay 3             https://download.blender.org/release/Blender5.2/blender-5.2.2-linux-x64.tar.xz             -o /tmp/blender.tar.xz
+          mkdir -p /tmp/blender
+          tar -xJf /tmp/blender.tar.xz -C /tmp/blender --strip-components=1
+          /tmp/blender/blender --version
+
+      - name: Build Practice Recording Production Mix
+        env:
+          DMP_SKIP_PREVIEW: "1"
+        run: |
+          /tmp/blender/blender --background --factory-startup             --python assets/blender/rooms/build_studio_rooms.py
+
+      - name: Validate Practice Recording Production Mix
+        run: |
+          /tmp/blender/blender --background --factory-startup             --python assets/blender/rooms/validate_studio_rooms.py
+
+      - name: Build Mastering
+        env:
+          DMP_SKIP_PREVIEW: "1"
+        run: |
+          /tmp/blender/blender --background --factory-startup             --python assets/blender/mastering/build_mastering_room.py
+
+      - name: Validate Mastering
+        run: |
+          /tmp/blender/blender --background --factory-startup             --python assets/blender/mastering/validate_mastering_room.py
+
+      - name: Show generated files
+        run: |
+          du -h assets/blender/practice/* assets/blender/recording/* assets/blender/production/* assets/blender/mix/* assets/blender/mastering/* || true
+          du -h web/public/models/*/room/*.glb || true
+
+      - name: Commit generated Blender assets
+        run: |
+          git config user.name "deep-audio-blender-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add             assets/blender/practice/*.blend assets/blender/practice/*.png             assets/blender/recording/*.blend assets/blender/recording/*.png             assets/blender/production/*.blend assets/blender/production/*.png             assets/blender/mix/*.blend assets/blender/mix/*.png             assets/blender/mastering/*.blend assets/blender/mastering/*.png             web/public/models/practice/room/*.glb             web/public/models/recording/room/*.glb             web/public/models/production/room/*.glb             web/public/models/mix/room/*.glb             web/public/models/mastering/room/*.glb
+          if git diff --cached --quiet; then
+            echo "No generated asset changes"
+          else
+            git commit -m "build(blender): regenerate premium rooms [skip blender-build]"
+            git push
+          fi
+
