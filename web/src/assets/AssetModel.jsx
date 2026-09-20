@@ -56,14 +56,25 @@ class AssetErrorBoundary extends React.Component {
   }
 }
 
+function UnavailableAsset({ asset, fallbackNode }) {
+  const markCriticalAssetReady = useStudioStore((state) => state.markCriticalAssetReady);
+
+  useEffect(() => {
+    if (asset.category === 'room') markCriticalAssetReady(asset.id, 'procedural-fallback');
+  }, [asset.category, asset.id, markCriticalAssetReady]);
+
+  return fallbackNode;
+}
+
 export default function AssetModel({ assetId, fallback, ...props }) {
   const asset = getAsset(assetId);
   const markCriticalAssetReady = useStudioStore((state) => state.markCriticalAssetReady);
   const fallbackNode = <AssetFallback asset={asset}>{fallback}</AssetFallback>;
 
   if (!asset.available) {
-    if (asset.category === 'room') markCriticalAssetReady(asset.id, 'procedural-fallback');
-    return <group {...props} name={`${asset.id}_mount`}>{fallbackNode}</group>;
+    return <group {...props} name={`${asset.id}_mount`}>
+      <UnavailableAsset asset={asset} fallbackNode={fallbackNode}/>
+    </group>;
   }
 
   return <group {...props} name={`${asset.id}_mount`}>
