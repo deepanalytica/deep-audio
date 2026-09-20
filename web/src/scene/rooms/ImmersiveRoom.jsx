@@ -6,6 +6,7 @@ import AssetModel from '../../assets/AssetModel.jsx';
 import { getAsset } from '../../assets/assetRegistry.js';
 import { useStudioStore } from '../../store.js';
 import { RoomJewelryLayer } from '../hardware/JewelryLayers.jsx';
+import ProductionPremiumRoom from './ProductionPremiumRoom.jsx';
 
 const ROOM_DESIGNS = Object.freeze({
   practice: {
@@ -32,8 +33,8 @@ const ROOM_DESIGNS = Object.freeze({
   },
   production: {
     assetId: 'production_room_001',
-    accent: '#1688ff',
-    warm: '#bd70dc',
+    accent: '#9474c3',
+    warm: '#d0a064',
     hitboxes: [
       { id: 'studio_keyboard', type: 'PERFORMANCE KEYS', title: 'Deep Studio Keyboard', description: 'Piano, síntesis y capas desde la posición central.', actions: ['Grand', 'Electric', 'Analog', 'Layer'], position: [0, 1.05, -1.18], size: [3.7, .55, .9], focus: { position: [0, 2.0, 1.25], target: [0, 1.0, -1.18] } },
       { id: 'synth_rack_left', type: 'MODULAR SYNTH', title: 'Modular Voice A', description: 'Osciladores, filtros, modulación y patching táctil.', actions: ['Warm Pad', 'Sequence', 'Bass', 'Init'], position: [-3.22, 1.32, -3.65], size: [1.7, 2.7, .9], focus: { position: [-1.25, 1.8, -.9], target: [-3.22, 1.3, -3.65] } },
@@ -120,10 +121,21 @@ export default function ImmersiveRoom({ room, fallback }) {
   const design = ROOM_DESIGNS[room];
   const asset = getAsset(design.assetId);
 
-  return <group name={`${design.assetId}_scene`} userData={{ designSystem: 'immersive-room-001', glbAvailable: asset.available }}>
-    <AssetModel assetId={design.assetId} fallback={fallback}/>
+  const isPremiumProduction = room === 'production';
+
+  return <group
+    name={`${design.assetId}_scene`}
+    userData={{
+      designSystem: isPremiumProduction ? 'production-premium-v6' : 'immersive-room-001',
+      glbAvailable: isPremiumProduction ? false : asset.available
+    }}
+  >
+    {isPremiumProduction
+      ? <ProductionPremiumRoom/>
+      : <AssetModel assetId={design.assetId} fallback={fallback}/>
+    }
     <DesignedLighting design={design}/>
-    <RoomJewelryLayer room={room}/>
+    {!isPremiumProduction && <RoomJewelryLayer room={room}/>}
     {design.hitboxes.map((hotspot) => <RoomHitbox key={hotspot.id} hotspot={hotspot} accent={design.accent}/>)}
   </group>;
 }

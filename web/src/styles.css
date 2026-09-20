@@ -514,3 +514,77 @@ body{font-family:"Arial Narrow","Roboto Condensed",Inter,ui-sans-serif,system-ui
   isolation:isolate;
   contain:paint;
 }
+
+
+/* =========================================================
+   V6 — room transition integrity
+   No intermediate room state is ever exposed to the user.
+   ========================================================= */
+.room-transition{
+  position:fixed;
+  z-index:12000;
+  inset:0;
+  display:grid;
+  place-items:center;
+  background:
+    radial-gradient(circle at 50% 48%,rgba(72,48,26,.20),transparent 32%),
+    rgba(6,6,6,.985);
+  backdrop-filter:blur(18px);
+  animation:roomVeil .76s var(--ease) both;
+  pointer-events:auto;
+}
+.room-transition-glow{
+  position:absolute;
+  width:min(46vw,680px);
+  aspect-ratio:1.8;
+  border-radius:50%;
+  background:radial-gradient(ellipse,rgba(214,165,96,.08),transparent 67%);
+  filter:blur(30px);
+}
+.room-transition-center{
+  position:relative;
+  display:grid;
+  justify-items:center;
+  gap:7px;
+  color:#eee9df;
+  text-align:center;
+}
+.room-transition-number{
+  display:grid;
+  place-items:center;
+  width:34px;height:34px;
+  border:1px solid rgba(216,169,101,.34);
+  border-radius:8px;
+  color:#d9b06f;
+  font-size:11px;
+  box-shadow:inset 0 0 20px rgba(216,169,101,.05);
+}
+.room-transition-center small{
+  margin-top:7px;
+  color:#716a61;
+  font-size:6px;
+  letter-spacing:.23em;
+}
+.room-transition-center b{
+  font-size:13px;
+  font-weight:560;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+}
+.room-transition-center i{
+  display:block;
+  width:120px;height:1px;
+  margin-top:9px;
+  background:linear-gradient(90deg,transparent,#d2a15c,transparent);
+  transform-origin:left center;
+  animation:roomLine .62s ease-out both;
+}
+@keyframes roomVeil{
+  0%{opacity:0}
+  18%,70%{opacity:1}
+  100%{opacity:0}
+}
+@keyframes roomLine{
+  from{transform:scaleX(.08);opacity:.2}
+  to{transform:scaleX(1);opacity:.85}
+}

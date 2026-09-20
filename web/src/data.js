@@ -20,8 +20,8 @@ export const ROOMS = {
     eyebrow:'SALA 03 · PRODUCCIÓN',
     title:'Construye un mundo sonoro.',
     copy:'Pianos, sintetizadores, ritmo, armonía y arreglos viven dentro de una sala diseñada para explorar.',
-    accent:'#1888ff', bg:'#070a12',
-    camera:{position:[0,2.55,7.2], target:[0,1.28,-2.65]}
+    accent:'#9b78c7', bg:'#08090d',
+    camera:{position:[0,2.18,5.85], target:[0,1.18,-2.72]}
   },
   mix: {
     number:'04', label:'Mezcla', action:'Equilibra',
