@@ -8,6 +8,7 @@ background runner; no third-party assets or textures are required.
 from __future__ import annotations
 
 import math
+import sys
 from pathlib import Path
 
 import bpy
@@ -17,6 +18,8 @@ from mathutils import Vector
 ROOT = Path(__file__).resolve().parents[3]
 WEB_MODELS = ROOT / "web" / "public" / "models"
 BLENDER_ASSETS = ROOT / "assets" / "blender"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from premium_upgrade import apply_premium_upgrade
 
 ROOMS = {
     "practice": {
@@ -491,8 +494,8 @@ def apply_modifiers_and_validate():
 def configure_scene(cfg):
     scene = bpy.context.scene
     scene.render.engine = "BLENDER_EEVEE"
-    scene.render.resolution_x = 960
-    scene.render.resolution_y = 600
+    scene.render.resolution_x = 1440
+    scene.render.resolution_y = 900
     scene.render.resolution_percentage = 100
     scene.render.image_settings.file_format = "PNG"
     scene.render.film_transparent = False
@@ -537,6 +540,17 @@ def build_room(key, cfg):
         "mix": build_mix,
     }
     builders[key](cfg, mats)
+    apply_premium_upgrade(key, cfg, mats, {
+        "box": box,
+        "cylinder": cylinder,
+        "sphere": sphere,
+        "torus": torus,
+        "cable": cable,
+        "speaker": speaker,
+        "rack": rack,
+        "add_light": add_light,
+        "add_camera": add_camera,
+    })
     lighting_and_cameras(cfg, mats)
     configure_scene(cfg)
     meshes, triangles, material_count, unapplied = apply_modifiers_and_validate()
