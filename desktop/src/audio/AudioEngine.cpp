@@ -377,7 +377,7 @@ void AudioEngine::renderMetronome (float* const* outputChannelData,
         if (clickSamplesRemaining > 0)
         {
             const auto envelope = (float) clickSamplesRemaining / (float) clickLength;
-            click = std::sin (clickPhase) * envelope * 0.16f;
+            click = static_cast<float> (std::sin (clickPhase)) * envelope * 0.16f;
             clickPhase += juce::MathConstants<double>::twoPi * 1700.0 / sr;
             --clickSamplesRemaining;
         }

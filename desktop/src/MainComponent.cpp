@@ -33,32 +33,36 @@ MainComponent::MainComponent()
     mixMasterStatus.setJustificationType (juce::Justification::centred);
     mixMasterStatus.setMinimumHorizontalScale (0.7f);
 
-    for (auto* c : { static_cast<juce::Component*> (&brandLabel),
-                     &headlineLabel,
-                     &roomDescription,
-                     &deviceStatus,
-                     &levelStatus,
-                     &takeStatus,
-                     &mixMasterStatus,
-                     &practiceButton,
-                     &recordRoomButton,
-                     &mixButton,
-                     &masterButton,
-                     &importButton,
-                     &playButton,
-                     &recordButton,
-                     &stopButton,
-                     &audioSetupButton,
-                     &monitorToggle,
-                     &metronomeToggle,
-                     &bpmLabel,
-                     &bpmSlider,
-                     &toneLabel,
-                     &tonePreset,
-                     &backingWaveform,
-                     &takeWaveform,
-                     &audioSetup })
-        addAndMakeVisible (c);
+    const std::array<juce::Component*, 25> components {
+        &brandLabel,
+        &headlineLabel,
+        &roomDescription,
+        &deviceStatus,
+        &levelStatus,
+        &takeStatus,
+        &mixMasterStatus,
+        &practiceButton,
+        &recordRoomButton,
+        &mixButton,
+        &masterButton,
+        &importButton,
+        &playButton,
+        &recordButton,
+        &stopButton,
+        &audioSetupButton,
+        &monitorToggle,
+        &metronomeToggle,
+        &bpmLabel,
+        &bpmSlider,
+        &toneLabel,
+        &tonePreset,
+        &backingWaveform,
+        &takeWaveform,
+        &audioSetup
+    };
+
+    for (auto* component : components)
+        addAndMakeVisible (component);
 
     setPrimaryButtonStyle (practiceButton, true);
     setPrimaryButtonStyle (recordRoomButton);
@@ -268,21 +272,25 @@ void MainComponent::refreshRoom()
 {
     const auto performanceVisible = room == Room::practice || room == Room::record;
 
-    for (auto* c : { static_cast<juce::Component*> (&importButton),
-                     &playButton,
-                     &recordButton,
-                     &stopButton,
-                     &monitorToggle,
-                     &metronomeToggle,
-                     &bpmLabel,
-                     &bpmSlider,
-                     &toneLabel,
-                     &tonePreset,
-                     &backingWaveform,
-                     &takeWaveform,
-                     &levelStatus,
-                     &takeStatus })
-        c->setVisible (performanceVisible);
+    const std::array<juce::Component*, 14> performanceComponents {
+        &importButton,
+        &playButton,
+        &recordButton,
+        &stopButton,
+        &monitorToggle,
+        &metronomeToggle,
+        &bpmLabel,
+        &bpmSlider,
+        &toneLabel,
+        &tonePreset,
+        &backingWaveform,
+        &takeWaveform,
+        &levelStatus,
+        &takeStatus
+    };
+
+    for (auto* component : performanceComponents)
+        component->setVisible (performanceVisible);
 
     mixMasterStatus.setVisible (! performanceVisible);
 
