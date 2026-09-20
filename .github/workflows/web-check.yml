@@ -27,6 +27,7 @@ jobs:
           test -s web/studio-v2.js
           grep -q 'id="studio"' web/index.html
           grep -q 'studio-v2.js?v=20260920-2' web/index.html
-          grep -q "three@0.186.0" web/studio-v2.js
+          grep -q "./vendor/three.module.js" web/studio-v2.js
+          test -s web/vendor/three.module.js
           grep -q "SESSION PLAYERS" web/studio-v2.js
           grep -q "HARMONY LAB" web/studio-v2.js

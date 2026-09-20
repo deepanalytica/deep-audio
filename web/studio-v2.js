@@ -1,4 +1,4 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js';
+import * as THREE from './vendor/three.module.js';
 
 const app = document.querySelector('#app');
 const canvas = document.querySelector('#studio');
