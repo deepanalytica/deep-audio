@@ -5,6 +5,7 @@ import { Environment, Lightformer, RoundedBox } from '@react-three/drei';
 import AssetModel from '../../assets/AssetModel.jsx';
 import { getAsset } from '../../assets/assetRegistry.js';
 import { useStudioStore } from '../../store.js';
+import { MasteringJewelryLayer } from '../hardware/JewelryLayers.jsx';
 
 const WALNUT = '#392519';
 const WALNUT_EDGE = '#6b4930';
@@ -356,6 +357,7 @@ export default function MasteringRoom() {
   return <group name="MASTERING_ROOM_001">
     <AssetModel assetId="mastering_room_001" fallback={<RoomArchitecture/>}/>
     <MasteringLighting/>
+    <MasteringJewelryLayer/>
     {productionRoomAvailable ? <>
       <InteractiveAsset meta={consoleMeta}><InvisibleHitbox size={[6.25, 1.3, 1.9]} position={[0, 1.02, -1.02]}/></InteractiveAsset>
       <InteractiveAsset meta={monitorMeta('left')}><InvisibleHitbox size={[1.2, 1.9, .82]} position={[-2.28, 1.42, -5.22]}/></InteractiveAsset>
