@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import { CameraControls, ContactShadows, RoundedBox, Sparkles } from '@react-three/drei';
+import { CameraControls, ContactShadows, RoundedBox } from '@react-three/drei';
 import { Bloom, EffectComposer, Noise, Vignette } from '@react-three/postprocessing';
 import { useStudioStore } from '../store.js';
 import { ROOMS } from '../data.js';
@@ -11,6 +11,7 @@ import {
 } from './objects.jsx';
 import MasteringRoom001 from './mastering/MasteringRoom.jsx';
 import ImmersiveRoom from './rooms/ImmersiveRoom.jsx';
+import StudioCinematography from '../visual/StudioCinematography.jsx';
 
 function CameraRig(){
   const controls=useRef();
@@ -159,17 +160,28 @@ export default function StudioScene(){
 
   return <>
     <color attach="background" args={[cfg.bg]}/>
-    <fog attach="fog" args={[cfg.bg,9,24]}/>
+    <fog attach="fog" args={[cfg.bg,11,30]}/>
+    <StudioCinematography/>
     <CameraRig/>
     {room!=='master'&&<ImmersiveRoom room={room} fallback={fallbacks[room]}/>}
     {room!=='master'&&<RoomPlayers room={room} players={players} accent={cfg.accent}/>}
     {room==='master'&&<MasteringRoom001/>}
-    <ContactShadows position={[0,.035,-2.5]} opacity={.48} scale={room==='master'?9:16} blur={2.4} far={8} color="#000000"/>
-    <Sparkles count={room==='production'?34:14} scale={[13,5,12]} size={.7} speed={.12} opacity={.12} color={cfg.accent}/>
+    <ContactShadows
+      position={[0,.028,-2.5]}
+      opacity={room==='master'?.34:.4}
+      scale={room==='master'?11:18}
+      blur={3.4}
+      far={9}
+      color="#000000"
+    />
     <EffectComposer multisampling={4}>
-      <Bloom intensity={room==='master'?.2:.38} luminanceThreshold={1.05} luminanceSmoothing={.5}/>
-      <Noise opacity={.018}/>
-      <Vignette eskil={false} offset={.14} darkness={.72}/>
+      <Bloom
+        intensity={room==='production'?.2:.14}
+        luminanceThreshold={1.12}
+        luminanceSmoothing={.42}
+      />
+      <Noise opacity={.006}/>
+      <Vignette eskil={false} offset={.19} darkness={.48}/>
     </EffectComposer>
   </>;
 }
