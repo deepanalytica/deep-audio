@@ -6,6 +6,7 @@ import AssetModel from '../../assets/AssetModel.jsx';
 import { getAsset } from '../../assets/assetRegistry.js';
 import { useStudioStore } from '../../store.js';
 import { RoomJewelryLayer } from '../hardware/JewelryLayers.jsx';
+import ProductionPremiumRoom from './ProductionPremiumRoom.jsx';
 
 const ROOM_DESIGNS = Object.freeze({
   practice: {
@@ -120,10 +121,21 @@ export default function ImmersiveRoom({ room, fallback }) {
   const design = ROOM_DESIGNS[room];
   const asset = getAsset(design.assetId);
 
-  return <group name={`${design.assetId}_scene`} userData={{ designSystem: 'immersive-room-001', glbAvailable: asset.available }}>
-    <AssetModel assetId={design.assetId} fallback={fallback}/>
+  const isPremiumProduction = room === 'production';
+
+  return <group
+    name={`${design.assetId}_scene`}
+    userData={{
+      designSystem: isPremiumProduction ? 'production-premium-v6' : 'immersive-room-001',
+      glbAvailable: isPremiumProduction ? false : asset.available
+    }}
+  >
+    {isPremiumProduction
+      ? <ProductionPremiumRoom/>
+      : <AssetModel assetId={design.assetId} fallback={fallback}/>
+    }
     <DesignedLighting design={design}/>
-    <RoomJewelryLayer room={room}/>
+    {!isPremiumProduction && <RoomJewelryLayer room={room}/>}
     {design.hitboxes.map((hotspot) => <RoomHitbox key={hotspot.id} hotspot={hotspot} accent={design.accent}/>)}
   </group>;
 }
