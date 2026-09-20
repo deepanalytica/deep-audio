@@ -37,11 +37,11 @@ export const useStudioStore = create((set,get) => ({
     window.setTimeout(()=>{
       if(get().roomTransition.id!==id)return;
       set({room,selected:null,mapOpen:false});
-    },180);
+    },80);
     window.setTimeout(()=>{
       if(get().roomTransition.id!==id)return;
       set({roomTransition:{active:false,target:null,id}});
-    },760);
+    },360);
   },
   select:(selected)=>set({selected}),
   closeSelected:()=>set({selected:null}),
