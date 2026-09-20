@@ -15,7 +15,7 @@ export default function App(){
 
   useEffect(()=>{
     if(!ready)return undefined;
-    const ids=['recording_room_001','mix_room_001','mastering_room_001'];
+    const ids=['recording_room_001','production_room_001','mix_room_001','mastering_room_001'];
     let cancelled=false;
     const preloadNext=(index)=>{
       if(cancelled||index>=ids.length)return;
