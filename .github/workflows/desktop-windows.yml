@@ -1,5 +1,9 @@
 name: Desktop Windows
 
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
