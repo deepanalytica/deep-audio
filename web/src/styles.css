@@ -455,3 +455,45 @@ body{font-family:"Arial Narrow","Roboto Condensed",Inter,ui-sans-serif,system-ui
   .workflow-nav{max-width:none}
   .workflow-nav button small{display:none}
 }
+
+
+/* =========================================================
+   V5 — premium boot sequence
+   Prevents FOUC / double-interface perception.
+   ========================================================= */
+.app-loading .hud{visibility:hidden}
+.boot-sequence{
+  position:fixed;
+  z-index:9999;
+  inset:0;
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 50% 42%,rgba(62,43,23,.34) 0,rgba(18,15,11,.92) 28%,#070707 68%),
+    #070707;
+  opacity:1;
+  transition:opacity .42s var(--ease),filter .42s var(--ease);
+}
+.boot-sequence.leaving{opacity:0;filter:blur(8px);pointer-events:none}
+.boot-ambient{
+  position:absolute;
+  inset:-10%;
+  background:
+    linear-gradient(115deg,transparent 0 42%,rgba(216,166,93,.035) 49%,transparent 56%),
+    radial-gradient(ellipse at 50% 65%,rgba(213,162,87,.08),transparent 42%);
+  animation:bootDrift 7s ease-in-out infinite alternate;
+}
+@keyframes bootDrift{from{transform:translate3d(-1.2%,.4%,0) scale(1.02)}to{transform:translate3d(1.2%,-.6%,0) scale(1.05)}}
+.boot-center{position:relative;width:300px;text-align:center}
+.boot-mark{height:46px;display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:14px}
+.boot-mark i{display:block;width:2px;border-radius:5px;background:#d7aa66;box-shadow:0 0 18px rgba(215,170,102,.28);animation:bootBars 1.5s ease-in-out infinite alternate}
+.boot-mark i:nth-child(2),.boot-mark i:nth-child(4){animation-delay:-.4s}.boot-mark i:nth-child(3){animation-delay:-.8s}
+@keyframes bootBars{to{transform:scaleY(.68);opacity:.62}}
+.boot-wordmark b,.boot-wordmark small{display:block}
+.boot-wordmark b{font-size:12px;letter-spacing:.26em;color:#eee9df}
+.boot-wordmark small{margin-top:5px;font-size:6px;letter-spacing:.5em;color:#b48d55}
+.boot-copy{margin-top:28px;color:#6f6a63;font-size:7px;letter-spacing:.14em;text-transform:uppercase}
+.boot-progress{height:2px;margin-top:11px;background:rgba(255,255,255,.055);overflow:hidden}
+.boot-progress i{display:block;height:100%;min-width:8%;background:linear-gradient(90deg,#7b5c34,#e0b36c);box-shadow:0 0 12px rgba(224,179,108,.28);transition:width .28s var(--ease)}
+.boot-meta{display:flex;justify-content:space-between;margin-top:8px;color:#4f4c47;font-size:6px;letter-spacing:.12em}
