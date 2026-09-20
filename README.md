@@ -1,43 +1,39 @@
 # Deep Audio
 
-Deep Audio is an Android audio player focused on improving local voice recordings with practical presets, a 10-band equalizer, preamp gain, and master volume.
+This repository now has two product lines while the new desktop direction is validated.
 
-## Features
+## Desktop studio
 
-- Open a local audio folder with Android Storage Access Framework.
-- Play MP3, WAV, M4A, AAC, FLAC, and OGG files.
-- Media3 / ExoPlayer playback.
-- 10-band equalizer UI with voice-focused presets.
-- Presets for clear voice, old phone recordings, white noise reduction, podcasts, interviews, conference audio, low-volume audio, and more.
-- LoudnessEnhancer-based preamp gain.
-- Master volume up to 150%.
-- Distortion risk warning when gain or volume is high.
-- Persistent folder, preset, band, gain, and volume settings.
+The active desktop product work lives in:
 
-## GitHub Actions APK
+- desktop/
+- docs/PRODUCT.md
+- docs/ARCHITECTURE.md
+- docs/ROADMAP.md
+- docs/TEST_PLAN.md
+- docs/DECISIONS.md
 
-The workflow at `.github/workflows/android-build.yml` builds the debug APK on every push, pull request, and manual workflow dispatch.
+Goal: a musician-first home studio that minimises setup friction while preserving professional depth through progressive disclosure.
 
-The generated APK is uploaded as the artifact:
+The first desktop vertical slice targets Windows + Fluid Audio SRI-2 and covers:
 
-```text
-deep-audio-debug-apk
-```
+- audio-device selection;
+- live instrument monitoring;
+- useful bass/guitar starting tones;
+- backing-track playback;
+- metronome;
+- 24-bit WAV recording;
+- waveform feedback;
+- workflow navigation from Ensayo to Master.
 
-Expected APK path inside the workflow:
+See desktop/README.md for build instructions.
 
-```text
-app/build/outputs/apk/debug/app-debug.apk
-```
+## Existing Android utility
 
-## Local Build
+The original Android audio-player work remains under app/ and is intentionally preserved during desktop validation. It is not being deleted or silently repurposed.
 
-If Java 17, Android SDK 35, and Gradle are installed locally:
+## Development rule
 
-```bash
-gradle clean assembleDebug
-```
+Do not add features because a DAW is expected to have them.
 
-## Repository
-
-This repository is configured to build the APK automatically in GitHub Actions after each push and pull request.
+Add them when they shorten the path from musical intent to a reliable result, or when the current architecture cannot support the next validated workflow.
