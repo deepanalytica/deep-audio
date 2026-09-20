@@ -17,6 +17,8 @@ An asset follows this runtime flow:
 
 The registry flag prevents speculative network requests for exports that do not exist. A React error boundary catches a failed declared asset and restores its fallback instead of taking down the studio.
 
+The five immersive room records are currently active: Practice, Recording, Production, Mix and Mastering. Their room GLBs own appearance only; `ImmersiveRoom` and `MasteringRoom` keep hit areas, focus poses and UI metadata in React.
+
 ## Adding an asset
 
 1. Create original work or record the external source, author, licence, URL and modifications.
@@ -34,4 +36,4 @@ Node names such as `master_console_eq_section` or `main_monitor_left_woofer` are
 
 ## Preload policy
 
-There is no automatic preload in the first slice. Mastering assets are optional replacements and the procedural fallback appears immediately. Add preload only after profiling shows a meaningful reduction in visible latency without harming initial room load or memory use.
+There is no automatic preload in the current five-room set. Every room remains an optional visual replacement and its procedural fallback appears while loading or after a declared failure. Add preload only after profiling shows a meaningful reduction in visible latency without harming initial load or memory use.

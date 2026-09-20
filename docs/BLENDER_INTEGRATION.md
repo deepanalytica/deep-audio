@@ -25,6 +25,7 @@ The five checks remain the reconnection smoke test for any future session even t
 ## Canonical source and export
 
 - Source: `assets/blender/mastering/mastering_room_001.blend`
+- Derived room sources: `assets/blender/{practice,recording,production,mix}/*_room_001.blend`
 - Units: meters.
 - Runtime axes: glTF Y-up, forward `-Z`.
 - Export root: `web/public/models/mastering/`.
@@ -37,3 +38,5 @@ The Blender scene must preserve modular collections or objects for the room shel
 Blender produces the visual twin: room geometry, materials, lighting reference, pivots and semantic node names. It does not define measured acoustics. The acoustic twin remains a separate system of documented impulse responses, HRTF, distance, early reflections, convolution and spatial placement. A visually convincing room must never be presented as acoustically measured unless measurement data exists.
 
 React Three Fiber owns selection, camera focus, UI, presets, audio state and hotspots. The GLB is visual data, not product logic.
+
+The four derived-room sources and exports are reproducible through `assets/blender/rooms/build_studio_rooms.py`. Run `validate_studio_rooms.py` after every export to verify the semantic hero nodes, dimensions and measured GLB budgets before enabling an asset in the registry.
