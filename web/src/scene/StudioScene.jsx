@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import { CameraControls, ContactShadows, Environment, Lightformer, Sparkles } from '@react-three/drei';
+import { CameraControls, ContactShadows, Environment, Lightformer, RoundedBox, Sparkles } from '@react-three/drei';
 import { Bloom, EffectComposer, Noise, Vignette } from '@react-three/postprocessing';
 import { useStudioStore } from '../store.js';
 import { ROOMS } from '../data.js';
@@ -9,10 +9,12 @@ import {
   RoomShell, StudioMonitor, Rack, Amplifier, Guitar, DrumKit, Keyboard,
   SynthRack, ConsoleDesk, Microphone, SessionPlayer, AcousticPanel
 } from './objects.jsx';
+import MasteringRoom001 from './mastering/MasteringRoom.jsx';
 
 function CameraRig(){
   const controls=useRef();
   const room=useStudioStore((s)=>s.room);
+  const selected=useStudioStore((s)=>s.selected);
   const keys=useRef(new Set());
 
   useEffect(()=>{
@@ -26,9 +28,9 @@ function CameraRig(){
   },[]);
 
   useEffect(()=>{
-    const cfg=ROOMS[room].camera;
+    const cfg=selected?.focus||ROOMS[room].camera;
     controls.current?.setLookAt(...cfg.position,...cfg.target,true);
-  },[room]);
+  },[room,selected]);
 
   useFrame((_,dt)=>{
     const c=controls.current;if(!c)return;
@@ -170,17 +172,17 @@ export default function StudioScene(){
     <color attach="background" args={[cfg.bg]}/>
     <fog attach="fog" args={[cfg.bg,9,24]}/>
     <CameraRig/>
-    <StudioLighting accent={cfg.accent}/>
-    <RoomShell accent={cfg.accent} variant={room}/>
+    {room!=='master'&&<StudioLighting accent={cfg.accent}/>}
+    {room!=='master'&&<RoomShell accent={cfg.accent} variant={room}/>}
     {room==='practice'&&<PracticeRoom accent={cfg.accent} players={players}/>}
     {room==='record'&&<RecordRoom accent={cfg.accent} players={players}/>}
     {room==='production'&&<ProductionRoom accent={cfg.accent} players={players}/>}
     {room==='mix'&&<MixRoom accent={cfg.accent}/>}
-    {room==='master'&&<MasterRoom accent={cfg.accent}/>}
-    <ContactShadows position={[0,.035,-2.5]} opacity={.48} scale={16} blur={2.4} far={8} color="#000000"/>
+    {room==='master'&&<MasteringRoom001/>}
+    <ContactShadows position={[0,.035,-2.5]} opacity={.48} scale={room==='master'?9:16} blur={2.4} far={8} color="#000000"/>
     <Sparkles count={room==='production'?34:14} scale={[13,5,12]} size={.7} speed={.12} opacity={.12} color={cfg.accent}/>
     <EffectComposer multisampling={4}>
-      <Bloom intensity={.38} luminanceThreshold={1.05} luminanceSmoothing={.5}/>
+      <Bloom intensity={room==='master'?.2:.38} luminanceThreshold={1.05} luminanceSmoothing={.5}/>
       <Noise opacity={.018}/>
       <Vignette eskil={false} offset={.14} darkness={.72}/>
     </EffectComposer>

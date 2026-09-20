@@ -37,7 +37,7 @@ export const ROOMS = {
     title:'Decide con perspectiva.',
     copy:'Una suite silenciosa y precisa para balance, dinámica, loudness, referencia y entrega final.',
     accent:'#c99953', bg:'#110d07',
-    camera:{position:[0,1.62,8.1], target:[0,1.1,-3.5]}
+    camera:{position:[0,2.1,2.25], target:[0,1.18,-4.2]}
   }
 };
 
