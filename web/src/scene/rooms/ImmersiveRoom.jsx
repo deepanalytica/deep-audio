@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import AssetModel from '../../assets/AssetModel.jsx';
 import { getAsset } from '../../assets/assetRegistry.js';
 import { useStudioStore } from '../../store.js';
+import { RoomJewelryLayer } from '../hardware/JewelryLayers.jsx';
 
 const ROOM_DESIGNS = Object.freeze({
   practice: {
@@ -122,6 +123,7 @@ export default function ImmersiveRoom({ room, fallback }) {
   return <group name={`${design.assetId}_scene`} userData={{ designSystem: 'immersive-room-001', glbAvailable: asset.available }}>
     <AssetModel assetId={design.assetId} fallback={fallback}/>
     <DesignedLighting design={design}/>
+    <RoomJewelryLayer room={room}/>
     {design.hitboxes.map((hotspot) => <RoomHitbox key={hotspot.id} hotspot={hotspot} accent={design.accent}/>)}
   </group>;
 }
