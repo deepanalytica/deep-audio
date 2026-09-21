@@ -3,7 +3,7 @@ use cpal::traits::{DeviceTrait,HostTrait,StreamTrait};
 use deep_dsp::{AudioBlockMut,AudioProcessor,ProcessContext};
 use deep_playback::PlaybackTap;
 use deep_record::RecordingTap;
-use deep_transport::SharedTransport;
+use deep_transport::{MetronomeRenderer,SharedTransport};
 use rtrb::RingBuffer;
 use serde::Serialize;
 use thiserror::Error;
@@ -158,6 +158,7 @@ impl CpalDuplex{
         processor.prepare(sample_rate as f32,2048);
         let ctx=ProcessContext{sample_rate:sample_rate as f32};
         let transport_for_callback=transport.clone();
+        let mut metronome=MetronomeRenderer::new(sample_rate as f32);
 
         let output_stream=output_device.build_output_stream(
             &output_config,
@@ -168,7 +169,10 @@ impl CpalDuplex{
                     processor.process(&mut block,ctx);
                     if let Some(playback)=playback.as_mut(){playback.mix_into(data);}
                     if let Some(recorder)=recorder.as_mut(){recorder.capture(data);}
-                    if let Some(transport)=transport_for_callback.as_ref(){transport.advance(frames);}
+                    if let Some(transport)=transport_for_callback.as_ref(){
+                        metronome.process(data,out_ch,transport);
+                        transport.advance(frames);
+                    }
                 }
             },
             move|err|{eprintln!("Deep Audio output stream error: {err}");},
