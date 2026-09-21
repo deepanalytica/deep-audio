@@ -4,7 +4,7 @@ import ProjectBrowser from './ProjectBrowser.jsx';
 import { useStudioStore } from '../store.js';
 import { KEYS, MUSICIANS, PROGRESSIONS, ROOMS, ROOM_SOUNDS, SOUNDS } from '../data.js';
 import { audioEngine } from '../audio/engine.js';
-import { exportNativeRecording, isNativeShell, nativeAudioStatus, nativeMeter, nativeTransport, playNativeLastRecording, saveNativeSession, setNativeRoom, startNativeAudio, startNativeRecording, stopNativePlayback, stopNativeRecording } from '../nativeBridge.js';
+import { exportNativeRecording, isNativeShell, nativeAudioStatus, nativeMeter, nativeTransport, playNativeLastRecording, saveNativeSession, setNativeMetronome, setNativeRoom, startNativeAudio, startNativeRecording, stopNativePlayback, stopNativeRecording } from '../nativeBridge.js';
 
 function Brand(){
   return <div className="brand">
@@ -364,7 +364,11 @@ function Transport(){
       <div className="counter"><b>{format(elapsed)}</b><small>{nativeMessage||(recording?'GRABANDO':playing?'PLAY':'LISTO')}</small></div>
     </div>
     <div className="transport-center"><button className="circle small" onClick={stop}>■</button><button className="circle play" onClick={togglePlay}>{playing?'❚❚':'▶'}</button><button className={'rec '+(recording?'active':'')} onClick={toggleRec}><i/> REC</button></div>
-    <div className="transport-right"><label>BPM<input type="number" value={bpm} min="40" max="240" onChange={(e)=>changeBpm(e.target.value)}/></label><button className={'metro '+(metronome?'active':'')} onClick={()=>setMetronome(!metronome)}>Metrónomo</button><button className="track-button" onClick={exportTake}>Exportar WAV</button><div className={'meter '+(playing?'live':'')}><i/></div></div>
+    <div className="transport-right"><label>BPM<input type="number" value={bpm} min="40" max="240" onChange={(e)=>changeBpm(e.target.value)}/></label><button className={'metro '+(metronome?'active':'')} onClick={async()=>{
+      const next=!metronome;
+      setMetronome(next);
+      if(isNativeShell())await setNativeMetronome(next).catch((error)=>setNativeMessage(String(error)));
+    }}>Metrónomo</button><button className="track-button" onClick={exportTake}>Exportar WAV</button><div className={'meter '+(playing?'live':'')}><i/></div></div>
     <ProjectBrowser open={projectsOpen} onClose={()=>setProjectsOpen(false)}/>
   </footer>;
 }
