@@ -3,7 +3,7 @@ import AudioSetup from './AudioSetup.jsx';
 import { useStudioStore } from '../store.js';
 import { KEYS, MUSICIANS, PROGRESSIONS, ROOMS, ROOM_SOUNDS, SOUNDS } from '../data.js';
 import { audioEngine } from '../audio/engine.js';
-import { exportNativeRecording, isNativeShell, nativeAudioStatus, nativeMeter, nativeTransport, saveNativeSession, setNativeRoom, startNativeAudio, startNativeRecording, stopNativeRecording } from '../nativeBridge.js';
+import { exportNativeRecording, isNativeShell, nativeAudioStatus, nativeMeter, nativeTransport, playNativeLastRecording, saveNativeSession, setNativeRoom, startNativeAudio, startNativeRecording, stopNativePlayback, stopNativeRecording } from '../nativeBridge.js';
 
 function Brand(){
   return <div className="brand">
@@ -276,6 +276,7 @@ function Transport(){
     if(isNativeShell()){
       try{
         if(recording)await stopNativeRecording();
+        await stopNativePlayback().catch(()=>{});
         const snapshot=await nativeTransport('stop');
         setPlaying(snapshot.playing);
         setRecording(snapshot.recording);
@@ -290,9 +291,17 @@ function Transport(){
   const togglePlay=async()=>{
     if(isNativeShell()){
       try{
-        const snapshot=await nativeTransport(playing?'pause':'play');
-        setPlaying(snapshot.playing);
-        setRecording(snapshot.recording);
+        if(playing){
+          await stopNativePlayback().catch(()=>{});
+          const snapshot=await nativeTransport('pause');
+          setPlaying(snapshot.playing);
+          setRecording(snapshot.recording);
+        }else{
+          await playNativeLastRecording().catch(()=>null);
+          const snapshot=await nativeTransport('play');
+          setPlaying(snapshot.playing);
+          setRecording(snapshot.recording);
+        }
       }catch(error){setNativeMessage(String(error));}
       return;
     }
