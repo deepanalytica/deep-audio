@@ -19,6 +19,7 @@ deep-dsp = { path = "../../../crates/deep-dsp" }
 deep-metering = { path = "../../../crates/deep-metering" }
 deep-params = { path = "../../../crates/deep-params" }
 deep-record = { path = "../../../crates/deep-record" }
+deep-playback = { path = "../../../crates/deep-playback" }
 deep-session = { path = "../../../crates/deep-session" }
 deep-transport = { path = "../../../crates/deep-transport" }
 
