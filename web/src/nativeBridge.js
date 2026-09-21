@@ -37,7 +37,7 @@ export async function nativeTransportSnapshot(){return isNativeShell()?invoke('t
 export async function nativeTransport(action,{bpm=null,positionSamples=null}={}){return invoke('transport_command',{action,bpm,positionSamples});}
 export async function setNativeRoom(room){if(isNativeShell())await invoke('set_room',{room});}
 export async function listNativeAudioDevices(preferAsio=false){return invoke('list_audio_devices',{preferAsio});}
-export async function startNativeAudio(preferAsio=false){return invoke('start_audio',{preferAsio});}
+export async function startNativeAudio(preferAsio=false,inputDevice=null,outputDevice=null){return invoke('start_audio',{preferAsio,inputDevice,outputDevice});}
 export async function stopNativeAudio(){return invoke('stop_audio');}
 export async function startNativeRecording(name=null){return invoke('start_recording',{name});}
 export async function stopNativeRecording(){return invoke('stop_recording');}
