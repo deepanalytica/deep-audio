@@ -277,8 +277,10 @@ fn load_session(state:tauri::State<'_,EngineState>,path:String)->Result<Session,
     }
     state.transport.set_bpm(loaded.transport.bpm);
     state.transport.seek_samples(loaded.transport.position_samples);
-    if loaded.transport.playing{state.transport.play();}else{state.transport.pause();}
+    state.transport.pause();
     state.transport.set_recording(false);
+    loaded.transport.playing=false;
+    loaded.transport.recording=false;
 
     let latest_clip=loaded.tracks.iter()
         .flat_map(|track|track.clips.iter())
@@ -387,6 +389,9 @@ fn start_audio(
                 input_device:status.input_device.clone(),
                 output_device:status.output_device.clone(),
             });
+            if let Ok(mut session)=state.session.lock(){
+                if let Some(sample_rate)=status.sample_rate{session.sample_rate=sample_rate;}
+            }
             *slot=Some(service);
             *state.keys_control.lock().map_err(|_|"keys control lock poisoned".to_string())?=Some(keys_controller);
             Ok(status)
