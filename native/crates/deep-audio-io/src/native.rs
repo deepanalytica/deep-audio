@@ -216,6 +216,7 @@ where
     // This avoids callback allocations even for unusually large host buffers.
     let scratch_samples = (sample_rate as usize * output_channels).max(8_192);
     let mut scratch = vec![0.0_f32; scratch_samples];
+    let mut playback_was_active = false;
 
     device
         .build_output_stream(
@@ -237,8 +238,12 @@ where
                     let frames = block.frames() as u64;
                     processor.process(&mut block, context);
 
+                    let mut playback_ended = false;
                     if let Some(playback) = playback.as_mut() {
                         playback.mix_into(buffer);
+                        let playback_active = playback.is_playing();
+                        playback_ended = playback_was_active && !playback_active;
+                        playback_was_active = playback_active;
                     }
 
                     // Record the musical signal before monitoring-only click injection.
@@ -249,6 +254,9 @@ where
                     if let Some(transport) = transport.as_ref() {
                         metronome.process(buffer, output_channels, transport);
                         transport.advance(frames);
+                        if playback_ended && !transport.snapshot().recording {
+                            transport.pause();
+                        }
                     }
                 }
 
