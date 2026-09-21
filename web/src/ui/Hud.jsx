@@ -4,7 +4,7 @@ import ProjectBrowser from './ProjectBrowser.jsx';
 import { useStudioStore } from '../store.js';
 import { KEYS, MUSICIANS, PROGRESSIONS, ROOMS, ROOM_SOUNDS, SOUNDS } from '../data.js';
 import { audioEngine } from '../audio/engine.js';
-import { exportNativeRecording, isNativeShell, nativeAudioStatus, nativeMeter, nativeTransport, playNativeLastRecording, saveNativeSession, setNativeMetronome, setNativeRoom, startNativeAudio, startNativeRecording, stopNativePlayback, stopNativeRecording } from '../nativeBridge.js';
+import { exportNativeRecording, isNativeShell, nativeAudioStatus, nativeMeter, nativeTransport, NativeParam, playNativeLastRecording, saveNativeSession, setNativeMetronome, setNativeParameter, setNativeRoom, startNativeAudio, startNativeRecording, stopNativePlayback, stopNativeRecording } from '../nativeBridge.js';
 
 function Brand(){
   return <div className="brand">
@@ -158,7 +158,16 @@ function MasteringContext({selected,close}){
         const min=id==='tone'?-100:id==='ceiling'?-3:0;
         const max=id==='ceiling'?0:id==='stereo'?150:100;
         const step=id==='ceiling'?.1:1;
-        return <label key={id}><span><b>{label}</b><small>{minLabel} · {maxLabel}</small></span><input type="range" min={min} max={max} step={step} value={controls[id]} onChange={(event)=>setControl(id,Number(event.target.value))}/></label>;
+        const onChange=(event)=>{
+          const value=Number(event.target.value);
+          setControl(id,value);
+          if(isNativeShell()){
+            if(id==='tone')void setNativeParameter(NativeParam.MASTER_INPUT_DB,value*.12);
+            if(id==='saturation')void setNativeParameter(NativeParam.MASTER_DRIVE_PERCENT,value);
+            if(id==='ceiling')void setNativeParameter(NativeParam.MASTER_CEILING_DB,value);
+          }
+        };
+        return <label key={id}><span><b>{label}</b><small>{minLabel} · {maxLabel}</small></span><input type="range" min={min} max={max} step={step} value={controls[id]} onChange={onChange}/></label>;
       })}</div>
     </details>
     <button className="return-studio" onClick={close}>Return to operator view</button>
