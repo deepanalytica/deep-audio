@@ -73,7 +73,9 @@ jobs:
         run: cargo check -p deep-audio-lab --features native-audio
 
   windows-artifact:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/rust-native-platform'
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/rust-native-platform') ||
+      (github.event_name == 'pull_request' && github.head_ref == 'rust-native-platform')
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -88,12 +90,19 @@ jobs:
         run: |
           npm ci
           npm run build
-      - name: Build Deep Music Producer
+      - name: Build Deep Music Producer release executable
         working-directory: native
         run: cargo build -p deep-music-producer-native --features native-audio --release
-      - name: Build Deep Glue CLAP
+      - name: Build Deep Glue CLAP release plugin
         working-directory: native
         run: cargo build -p deep-glue-clap --release
+      - name: Verify release binaries
+        shell: pwsh
+        run: |
+          if (!(Test-Path "native/target/release/deep-music-producer-native.exe")) { throw "Deep Music Producer executable missing" }
+          if (!(Test-Path "native/target/release/deep_glue_clap.dll")) { throw "Deep Glue CLAP binary missing" }
+          if ((Get-Item "native/target/release/deep-music-producer-native.exe").Length -le 0) { throw "Deep Music Producer executable is empty" }
+          if ((Get-Item "native/target/release/deep_glue_clap.dll").Length -le 0) { throw "Deep Glue CLAP binary is empty" }
       - name: Package Windows x64
         shell: pwsh
         run: |
@@ -101,9 +110,17 @@ jobs:
           Copy-Item native/target/release/deep-music-producer-native.exe dist/DeepMusicProducer.exe
           Copy-Item native/target/release/deep_glue_clap.dll dist/DeepGlue.clap
           Copy-Item docs/RUST_NATIVE_PLATFORM.md dist/ARCHITECTURE.md
+          @(
+            "Deep Music Producer Windows x64"
+            "commit=${{ github.sha }}"
+            "built_utc=$((Get-Date).ToUniversalTime().ToString('o'))"
+          ) | Set-Content dist/BUILD.txt
+          (Get-FileHash dist/DeepMusicProducer.exe -Algorithm SHA256).Hash + "  DeepMusicProducer.exe" | Set-Content dist/SHA256SUMS.txt
+          (Get-FileHash dist/DeepGlue.clap -Algorithm SHA256).Hash + "  DeepGlue.clap" | Add-Content dist/SHA256SUMS.txt
           Compress-Archive -Path dist/* -DestinationPath DeepMusicProducer-Windows-x64.zip -Force
       - uses: actions/upload-artifact@v4
         with:
-          name: DeepMusicProducer-Windows-x64
+          name: DeepMusicProducer-Windows-x64-${{ github.sha }}
           path: DeepMusicProducer-Windows-x64.zip
           if-no-files-found: error
+          retention-days: 14
