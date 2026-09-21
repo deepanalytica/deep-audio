@@ -13,6 +13,7 @@ asio = ["native-audio", "cpal/asio"]
 [dependencies]
 deep-dsp = { path = "../deep-dsp" }
 deep-record = { path = "../deep-record" }
+deep-playback = { path = "../deep-playback" }
 deep-transport = { path = "../deep-transport" }
 serde.workspace = true
 thiserror.workspace = true
