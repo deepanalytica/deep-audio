@@ -1,22 +1,119 @@
 {
   "schema_version": 1,
   "ranges": {
-    "utility": [1000, 1999],
-    "deep_glue": [2000, 2999],
-    "deep_eq": [3000, 3999],
-    "deep_amp": [4000, 4999],
-    "deep_room": [5000, 5999],
-    "deep_tape": [6000, 6999],
-    "deep_master": [7000, 7999],
-    "deep_keys": [8000, 8999]
+    "utility": [
+      1000,
+      1999
+    ],
+    "deep_glue": [
+      2000,
+      2999
+    ],
+    "deep_eq": [
+      3000,
+      3999
+    ],
+    "deep_amp": [
+      4000,
+      4999
+    ],
+    "deep_room": [
+      5000,
+      5999
+    ],
+    "deep_tape": [
+      6000,
+      6999
+    ],
+    "deep_master": [
+      7000,
+      7999
+    ],
+    "deep_keys": [
+      8000,
+      8999
+    ]
   },
   "parameters": [
-    {"id": 1001, "key": "deep_gain.gain_db", "unit": "dB", "min": -60, "max": 24, "default": 0},
-    {"id": 2001, "key": "deep_glue.threshold_db", "unit": "dB", "min": -60, "max": 0, "default": -18},
-    {"id": 2002, "key": "deep_glue.ratio", "unit": ":1", "min": 1, "max": 20, "default": 4},
-    {"id": 2003, "key": "deep_glue.attack_ms", "unit": "ms", "min": 0.1, "max": 100, "default": 10},
-    {"id": 2004, "key": "deep_glue.release_ms", "unit": "ms", "min": 10, "max": 1500, "default": 120},
-    {"id": 2005, "key": "deep_glue.makeup_db", "unit": "dB", "min": -12, "max": 24, "default": 0},
-    {"id": 2006, "key": "deep_glue.mix_percent", "unit": "%", "min": 0, "max": 100, "default": 100}
+    {
+      "id": 1001,
+      "key": "deep_gain.gain_db",
+      "unit": "dB",
+      "min": -60,
+      "max": 24,
+      "default": 0
+    },
+    {
+      "id": 2001,
+      "key": "deep_glue.threshold_db",
+      "unit": "dB",
+      "min": -60,
+      "max": 0,
+      "default": -18
+    },
+    {
+      "id": 2002,
+      "key": "deep_glue.ratio",
+      "unit": ":1",
+      "min": 1,
+      "max": 20,
+      "default": 4
+    },
+    {
+      "id": 2003,
+      "key": "deep_glue.attack_ms",
+      "unit": "ms",
+      "min": 0.1,
+      "max": 100,
+      "default": 10
+    },
+    {
+      "id": 2004,
+      "key": "deep_glue.release_ms",
+      "unit": "ms",
+      "min": 10,
+      "max": 1500,
+      "default": 120
+    },
+    {
+      "id": 2005,
+      "key": "deep_glue.makeup_db",
+      "unit": "dB",
+      "min": -12,
+      "max": 24,
+      "default": 0
+    },
+    {
+      "id": 2006,
+      "key": "deep_glue.mix_percent",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 100
+    },
+    {
+      "id": 7001,
+      "key": "deep_master.input_db",
+      "unit": "dB",
+      "min": -12,
+      "max": 12,
+      "default": 0
+    },
+    {
+      "id": 7002,
+      "key": "deep_master.ceiling_db",
+      "unit": "dBTP",
+      "min": -3,
+      "max": 0,
+      "default": -1
+    },
+    {
+      "id": 7003,
+      "key": "deep_master.drive_percent",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 0
+    }
   ]
 }
