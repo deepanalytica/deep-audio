@@ -3,6 +3,7 @@
 use deep_dsp::DeepGlueHandles;
 use deep_metering::{MeterSnapshot,SharedMeter};
 use deep_params::{ParameterBank,ParameterId,ParameterSnapshot};
+use deep_playback::{PlaybackController,PlaybackSpec};
 use deep_record::{RecorderController,RecordingSpec,RecordingSummary};
 use deep_session::{ClipState,ExportState,RoomId,Session,CURRENT_SCHEMA_VERSION};
 use deep_transport::{SharedTransport,TransportSnapshot as RtTransportSnapshot};
@@ -32,6 +33,7 @@ struct AudioStatus{
 struct AudioService{
     stop:std::sync::mpsc::Sender<()>,
     recorder:RecorderController,
+    playback:PlaybackController,
     info:deep_audio_io::native::StreamInfo,
     backend:String,
 }
@@ -238,7 +240,8 @@ fn start_audio(
     let meter=state.meter.clone();
     let transport=state.transport.clone();
     let recorder_capacity=48_000usize*2*8;
-    let(recorder,tap)=RecorderController::new(recorder_capacity);
+    let(recorder,record_tap)=RecorderController::new(recorder_capacity);
+    let(playback,playback_tap)=PlaybackController::new(recorder_capacity);
     let(ready_tx,ready_rx)=std::sync::mpsc::channel::<Result<deep_audio_io::native::StreamInfo,String>>();
     let(stop_tx,stop_rx)=std::sync::mpsc::channel::<()>();
     let preference=if prefer_asio{BackendPreference::Asio}else{BackendPreference::Default};
@@ -248,7 +251,8 @@ fn start_audio(
         match CpalDuplex::start_with_devices(
             processor,
             preference,
-            Some(tap),
+            Some(record_tap),
+            Some(playback_tap),
             Some(transport),
             input_device.as_deref(),
             output_device.as_deref(),
@@ -265,7 +269,7 @@ fn start_audio(
     match ready_rx.recv_timeout(Duration::from_secs(5)){
         Ok(Ok(info))=>{
             let backend=if prefer_asio{"asio".into()}else{"default".into()};
-            let service=AudioService{stop:stop_tx,recorder,info,backend};
+            let service=AudioService{stop:stop_tx,recorder,playback,info,backend};
             let status=status_from_service(&service);
             *slot=Some(service);
             Ok(status)
@@ -293,6 +297,8 @@ fn stop_audio(state:tauri::State<'_,EngineState>)->Result<(),String>{
         if service.recorder.is_recording(){
             let _=service.recorder.stop();
         }
+        service.playback.stop();
+        service.playback.shutdown();
         service.recorder.shutdown();
         let _=service.stop.send(());
     }
@@ -340,6 +346,29 @@ fn stop_recording(state:tauri::State<'_,EngineState>)->Result<RecordingSummary,S
 }
 
 #[tauri::command]
+fn play_last_recording(state:tauri::State<'_,EngineState>)->Result<String,String>{
+    let summary=state.last_recording.lock().map_err(|_|"recording state lock poisoned".to_string())?
+        .clone().ok_or_else(||"no completed recording to play".to_string())?;
+    let slot=state.audio.lock().map_err(|_|"audio service lock poisoned".to_string())?;
+    let service=slot.as_ref().ok_or_else(||"audio engine is not running".to_string())?;
+    let path=service.playback.play(
+        &summary.path,
+        PlaybackSpec{sample_rate:service.info.sample_rate,channels:service.info.output_channels.max(1)}
+    ).map_err(|e|e.to_string())?;
+    state.transport.seek_samples(0);
+    state.transport.play();
+    Ok(path)
+}
+
+#[tauri::command]
+fn stop_playback(state:tauri::State<'_,EngineState>)->Result<(),String>{
+    let slot=state.audio.lock().map_err(|_|"audio service lock poisoned".to_string())?;
+    if let Some(service)=slot.as_ref(){service.playback.stop();}
+    state.transport.pause();
+    Ok(())
+}
+
+#[tauri::command]
 fn export_last_recording(state:tauri::State<'_,EngineState>,name:Option<String>)->Result<String,String>{
     let summary=state.last_recording.lock().map_err(|_|"recording state lock poisoned".to_string())?
         .clone().ok_or_else(||"no completed recording to export".to_string())?;
@@ -380,6 +409,8 @@ pub fn run(){
             stop_audio,
             start_recording,
             stop_recording,
+            play_last_recording,
+            stop_playback,
             export_last_recording
         ])
         .run(tauri::generate_context!())
