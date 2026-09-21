@@ -153,6 +153,21 @@ function MasteringContext({selected,close}){
     ['Gain Reduction',Number(liveMeter.gain_reduction_db??0).toFixed(1),'dB']
   ]:DEMO_MASTERING_METRICS;
 
+  const applyProfile=(name)=>{
+    setProfile(name);
+    if(!isNativeShell()||name==='Custom')return;
+    const values={
+      Natural:[0,-1,0],
+      Streaming:[-1,-1,5],
+      Dynamic:[0,-1.2,0],
+      Power:[2,-.8,20]
+    }[name];
+    if(!values)return;
+    void setNativeParameter(NativeParam.MASTER_INPUT_DB,values[0]);
+    void setNativeParameter(NativeParam.MASTER_CEILING_DB,values[1]);
+    void setNativeParameter(NativeParam.MASTER_DRIVE_PERCENT,values[2]);
+  };
+
   const advanced=[
     ['tone','Tone','−','+'],
     ['dynamicEq','Dynamic EQ','0','100'],
@@ -165,7 +180,7 @@ function MasteringContext({selected,close}){
     <div className="panel-head"><div><small>{selected.type}</small><h2>{selected.title}</h2></div><button aria-label="Volver al estudio" onClick={close}>×</button></div>
     <p>{selected.description}</p>
     <div className="master-section-label"><span>Starting point</span><small>REVERSIBLE</small></div>
-    <div className="master-profiles">{MASTERING_PROFILES.map((name)=><button key={name} className={profile===name?'active':''} onClick={()=>setProfile(name)}>{name}</button>)}</div>
+    <div className="master-profiles">{MASTERING_PROFILES.map((name)=><button key={name} className={profile===name?'active':''} onClick={()=>applyProfile(name)}>{name}</button>)}</div>
     <div className="master-chain" aria-label="Mastering signal chain">{MASTERING_CHAIN.map((item,index)=><span key={item} className={index<6?'enabled':''}>{item}</span>)}</div>
     <div className="master-section-label"><span>Metering</span><small className="demo-badge">{liveMeter?'LIVE · RUST DSP':'DEMO · NO LIVE ANALYSER'}</small></div>
     <div className="master-meters">{metrics.map(([label,value,unit])=><div key={label}><span>{label}</span><b>{value}<small>{unit}</small></b></div>)}</div>
