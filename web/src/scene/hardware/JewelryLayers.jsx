@@ -1,4 +1,5 @@
 import React from 'react';
+import { NativeParam } from '../../nativeBridge.js';
 import {
   AmpControlStrip,
   HardwareButton,
@@ -116,7 +117,18 @@ function MixJewelry(){
       <HardwareDisplay position={[0,.08,-.57]} width={1.35} height={.22} title="MIX BUS" value="-18.2" unit="LUFS-S" accent="#6da4b6"/>
     </group>
     <group position={[-3.65,1.12,-3.4]}>{[-.72,-.3,.12,.54].map((y,i)=><RackFaceplate key={i} position={[0,y,0]} width={1.14} height={.31} accent="#759aa5" variant={i}/>)}</group>
-    <group position={[3.65,1.12,-3.4]}>{[-.72,-.3,.12,.54].map((y,i)=><RackFaceplate key={i} position={[0,y,0]} width={1.14} height={.31} accent="#c59258" variant={i+2}/>)}</group>
+    <group position={[3.65,1.12,-3.4]}>{[-.72,-.3,.12,.54].map((y,i)=><RackFaceplate
+      key={i}
+      position={[0,y,0]}
+      width={1.14}
+      height={.31}
+      accent="#c59258"
+      variant={i+2}
+      bindings={i===1?[
+        {id:NativeParam.GLUE_THRESHOLD_DB,min:-60,max:0,defaultValue:-18,step:.5},
+        {id:NativeParam.GLUE_RATIO,min:1,max:20,defaultValue:4,step:.25}
+      ]:[]}
+    />)}</group>
   </group>;
 }
 
