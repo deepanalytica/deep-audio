@@ -8,3 +8,9 @@ app/build/
 web/node_modules/
 web/dist/
 *.blend[0-9]
+
+# Rust native platform
+native/target/
+native/**/target/
+native/apps/deep-music-producer/src-tauri/gen/
+*.clap
