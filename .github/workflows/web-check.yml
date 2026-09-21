@@ -1,4 +1,8 @@
 name: Web Studio Check
+
+concurrency:
+  group: web-studio-${{ github.ref }}
+  cancel-in-progress: true
 on:
   push:
     branches: [main, feature/studio-v3-r3f]
