@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   isNativeShell,
   listNativeAudioDevices,
+  nativeAudioPreferences,
   nativeAudioStatus,
   nativeHealth,
   startNativeAudio,
@@ -10,6 +11,8 @@ import {
 
 export default function AudioSetup({open,onClose,onStatus}){
   const [preferAsio,setPreferAsio]=useState(false);
+  const [preferences,setPreferences]=useState({prefer_asio:false,input_device:null,output_device:null});
+  const [preferencesReady,setPreferencesReady]=useState(false);
   const [devices,setDevices]=useState([]);
   const [input,setInput]=useState('');
   const [output,setOutput]=useState('');
@@ -29,7 +32,6 @@ export default function AudioSetup({open,onClose,onStatus}){
       setCapabilities(health);
       if(preferAsio&&!health.asio_compiled){
         setPreferAsio(false);
-        setBusy(false);
         return;
       }
       const [nextDevices,nextStatus]=await Promise.all([
@@ -38,16 +40,43 @@ export default function AudioSetup({open,onClose,onStatus}){
       ]);
       setDevices(nextDevices);
       setStatus(nextStatus);
+      const preferredIn=preferences.input_device&&nextDevices.some((d)=>d.name===preferences.input_device&&d.can_input)?preferences.input_device:'';
+      const preferredOut=preferences.output_device&&nextDevices.some((d)=>d.name===preferences.output_device&&d.can_output)?preferences.output_device:'';
       const defaultIn=nextDevices.find((device)=>device.default_input&&device.can_input)?.name??nextDevices.find((device)=>device.can_input)?.name??'';
       const defaultOut=nextDevices.find((device)=>device.default_output&&device.can_output)?.name??nextDevices.find((device)=>device.can_output)?.name??'';
-      setInput((current)=>current&&nextDevices.some((d)=>d.name===current&&d.can_input)?current:defaultIn);
-      setOutput((current)=>current&&nextDevices.some((d)=>d.name===current&&d.can_output)?current:defaultOut);
+      setInput((current)=>current&&nextDevices.some((d)=>d.name===current&&d.can_input)?current:(preferredIn||defaultIn));
+      setOutput((current)=>current&&nextDevices.some((d)=>d.name===current&&d.can_output)?current:(preferredOut||defaultOut));
     }catch(err){
       setDevices([]);setError(String(err));
     }finally{setBusy(false);}
   };
 
-  useEffect(()=>{if(open)void refresh();},[open,preferAsio]);
+  useEffect(()=>{
+    if(!open){
+      setPreferencesReady(false);
+      return;
+    }
+    if(!isNativeShell()){
+      setPreferencesReady(true);
+      return;
+    }
+    let active=true;
+    void (async()=>{
+      try{
+        const saved=await nativeAudioPreferences();
+        if(!active)return;
+        setPreferences(saved);
+        setPreferAsio(Boolean(saved.prefer_asio));
+      }catch(err){
+        if(active)setError(String(err));
+      }finally{
+        if(active)setPreferencesReady(true);
+      }
+    })();
+    return()=>{active=false;};
+  },[open]);
+
+  useEffect(()=>{if(open&&preferencesReady)void refresh();},[open,preferAsio,preferencesReady]);
 
   const connect=async()=>{
     setBusy(true);setError('');
@@ -56,6 +85,11 @@ export default function AudioSetup({open,onClose,onStatus}){
       if(current.running)await stopNativeAudio();
       const next=await startNativeAudio(preferAsio,input||null,output||null);
       setStatus(next);
+      setPreferences({
+        prefer_asio:preferAsio,
+        input_device:next.input_device??input??null,
+        output_device:next.output_device??output??null
+      });
       onStatus?.(next);
     }catch(err){setError(String(err));}
     finally{setBusy(false);}
