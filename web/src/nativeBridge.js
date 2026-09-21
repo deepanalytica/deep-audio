@@ -7,7 +7,11 @@ export const NativeParam=Object.freeze({
   GLUE_MIX_PERCENT:2006,
   MASTER_INPUT_DB:7001,
   MASTER_CEILING_DB:7002,
-  MASTER_DRIVE_PERCENT:7003
+  MASTER_DRIVE_PERCENT:7003,
+  KEYS_VOLUME_DB:8001,
+  KEYS_CUTOFF_HZ:8002,
+  KEYS_ATTACK_MS:8003,
+  KEYS_RELEASE_MS:8004
 });
 
 function tauriInvoke(){
@@ -43,6 +47,9 @@ export async function setNativeRoom(room){if(isNativeShell())await invoke('set_r
 export async function listNativeAudioDevices(preferAsio=false){return invoke('list_audio_devices',{preferAsio});}
 export async function startNativeAudio(preferAsio=false,inputDevice=null,outputDevice=null){return invoke('start_audio',{preferAsio,inputDevice,outputDevice});}
 export async function stopNativeAudio(){return invoke('stop_audio');}
+export async function nativeNoteOn(note,velocity=.82){return invoke('note_on',{note,velocity});}
+export async function nativeNoteOff(note){return invoke('note_off',{note});}
+export async function nativeAllNotesOff(){return invoke('all_notes_off');}
 export async function startNativeRecording(name=null){return invoke('start_recording',{name});}
 export async function stopNativeRecording(){return invoke('stop_recording');}
 export async function playNativeLastRecording(){return invoke('play_last_recording');}
