@@ -5,6 +5,7 @@ import { Environment, Lightformer, RoundedBox } from '@react-three/drei';
 import AssetModel from '../../assets/AssetModel.jsx';
 import { getAsset } from '../../assets/assetRegistry.js';
 import { useStudioStore } from '../../store.js';
+import { NativeParam, setNativeParameter } from '../../nativeBridge.js';
 
 const WALNUT = '#392519';
 const WALNUT_EDGE = '#6b4930';
@@ -39,16 +40,60 @@ function Led({ position, color = WARM, size = 0.018 }) {
   </mesh>;
 }
 
-function Knob({ position, color = '#adb1b0', size = 0.045 }) {
-  return <group position={position}>
-    <mesh rotation={[Math.PI / 2, 0, 0]} castShadow>
-      <cylinderGeometry args={[size, size * 1.03, size * 0.58, 24]}/>
-      <meshPhysicalMaterial color={color} metalness={0.68} roughness={0.28}/>
-    </mesh>
-    <mesh position={[0, size * 0.08, size * 0.31]}>
-      <boxGeometry args={[0.008, size * 0.62, 0.006]}/>
-      <meshBasicMaterial color="#f2deaf"/>
-    </mesh>
+function Knob({ position, color = '#adb1b0', size = 0.045, nativeBinding = null }) {
+  const [value,setValue]=useState(nativeBinding?.defaultValue??0);
+  const drag=useRef(null);
+  const min=nativeBinding?.min??0,max=nativeBinding?.max??1;
+  const normalized=nativeBinding?THREE.MathUtils.clamp((value-min)/Math.max(1e-9,max-min),0,1):.5;
+  const angle=(-.78+normalized*1.56)*Math.PI;
+
+  const commit=(next)=>{
+    if(!nativeBinding)return;
+    const clamped=THREE.MathUtils.clamp(next,min,max);
+    setValue(clamped);
+    void setNativeParameter(nativeBinding.id,clamped);
+  };
+
+  const pointerY=(event)=>event?.nativeEvent?.clientY??event?.clientY??0;
+
+  return <group
+    position={position}
+    userData={nativeBinding?{interactive:true,parameterId:nativeBinding.id}:undefined}
+    onWheel={(event)=>{
+      if(!nativeBinding)return;
+      event.stopPropagation();
+      commit(value+(event.deltaY<0?1:-1)*(nativeBinding.step??((max-min)/100)));
+    }}
+    onDoubleClick={(event)=>{if(nativeBinding){event.stopPropagation();commit(nativeBinding.defaultValue??min);}}}
+    onPointerDown={(event)=>{
+      if(!nativeBinding)return;
+      event.stopPropagation();
+      drag.current={y:pointerY(event),value};
+      event.target?.setPointerCapture?.(event.pointerId);
+      document.body.style.cursor='ns-resize';
+    }}
+    onPointerMove={(event)=>{
+      if(!nativeBinding||!drag.current)return;
+      event.stopPropagation();
+      commit(drag.current.value+(drag.current.y-pointerY(event))*(max-min)*.0045);
+    }}
+    onPointerUp={(event)=>{
+      if(!drag.current)return;
+      event.stopPropagation();
+      event.target?.releasePointerCapture?.(event.pointerId);
+      drag.current=null;
+      document.body.style.cursor='';
+    }}
+  >
+    <group rotation={[0,0,angle]}>
+      <mesh rotation={[Math.PI / 2,0,0]} castShadow>
+        <cylinderGeometry args={[size,size*1.03,size*.58,24]}/>
+        <meshPhysicalMaterial color={color} metalness={.68} roughness={.28}/>
+      </mesh>
+      <mesh position={[0,size*.08,size*.31]}>
+        <boxGeometry args={[.008,size*.62,.006]}/><meshBasicMaterial color="#f2deaf"/>
+      </mesh>
+    </group>
   </group>;
 }
 
@@ -200,7 +245,18 @@ function ConsoleGeometry() {
       <RoundedBox args={[0.9, 0.08, 1.05]} radius={0.025} smoothness={3}>
         <meshPhysicalMaterial color={PANEL} metalness={0.45} roughness={0.35}/>
       </RoundedBox>
-      {[-0.27, 0, 0.27].map((knobX, index) => <Knob key={knobX} position={[knobX, 0.07, -0.27]} color={index === 1 ? color : '#a1a5a4'} size={index === 1 ? 0.052 : 0.042}/>)}
+      {[-0.27,0,0.27].map((knobX,index)=>{
+        const binding=index===1
+          ?(name==='master_console_tone_section'
+            ?{id:NativeParam.MASTER_INPUT_DB,min:-12,max:12,defaultValue:0,step:.25}
+            :name==='master_console_dynamics_section'
+              ?{id:NativeParam.MASTER_DRIVE_PERCENT,min:0,max:100,defaultValue:0,step:1}
+              :name==='master_console_limiter_section'
+                ?{id:NativeParam.MASTER_CEILING_DB,min:-3,max:0,defaultValue:-1,step:.05}
+                :null)
+          :null;
+        return <Knob key={knobX} position={[knobX,.07,-.27]} color={index===1?color:'#a1a5a4'} size={index===1?.052:.042} nativeBinding={binding}/>;
+      })}
       {[-0.28, -0.09, 0.1, 0.29].map((z, index) => <Led key={z} position={[-0.29 + index * 0.19, 0.07, z]} color={index > 2 ? '#d87852' : color} size={0.012}/>)}
       <mesh position={[0.26, 0.066, 0.28]}><boxGeometry args={[0.12, 0.018, 0.3]}/><meshStandardMaterial color="#d6d0c5" metalness={0.2} roughness={0.3}/></mesh>
       {[[ -0.41, 0.066, -0.47 ], [0.41, 0.066, -0.47], [-0.41, 0.066, 0.47], [0.41, 0.066, 0.47]].map((p) => <Screw key={p.join(':')} position={p}/>)}
