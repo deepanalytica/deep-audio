@@ -19,6 +19,11 @@ pub mod ids {
     pub const MASTER_INPUT_DB: ParameterId = ParameterId(7_001);
     pub const MASTER_CEILING_DB: ParameterId = ParameterId(7_002);
     pub const MASTER_DRIVE_PERCENT: ParameterId = ParameterId(7_003);
+
+    pub const KEYS_VOLUME_DB: ParameterId = ParameterId(8_001);
+    pub const KEYS_CUTOFF_HZ: ParameterId = ParameterId(8_002);
+    pub const KEYS_ATTACK_MS: ParameterId = ParameterId(8_003);
+    pub const KEYS_RELEASE_MS: ParameterId = ParameterId(8_004);
 }
 
 pub const GAIN_SPEC: ParameterSpec = ParameterSpec {
@@ -39,6 +44,13 @@ pub const MASTER_SPECS: [ParameterSpec; 3] = [
     ParameterSpec { id:ids::MASTER_INPUT_DB,key:"deep_master.input_db",name:"Input",unit:"dB",min:-12.0,max:12.0,default:0.0,smoothing_ms:20.0 },
     ParameterSpec { id:ids::MASTER_CEILING_DB,key:"deep_master.ceiling_db",name:"Ceiling",unit:"dBTP",min:-3.0,max:0.0,default:-1.0,smoothing_ms:20.0 },
     ParameterSpec { id:ids::MASTER_DRIVE_PERCENT,key:"deep_master.drive_percent",name:"Drive",unit:"%",min:0.0,max:100.0,default:0.0,smoothing_ms:20.0 },
+];
+
+pub const KEYS_SPECS: [ParameterSpec; 4] = [
+    ParameterSpec { id:ids::KEYS_VOLUME_DB,key:"deep_keys.volume_db",name:"Volume",unit:"dB",min:-60.0,max:6.0,default:-12.0,smoothing_ms:20.0 },
+    ParameterSpec { id:ids::KEYS_CUTOFF_HZ,key:"deep_keys.cutoff_hz",name:"Cutoff",unit:"Hz",min:200.0,max:18000.0,default:6000.0,smoothing_ms:15.0 },
+    ParameterSpec { id:ids::KEYS_ATTACK_MS,key:"deep_keys.attack_ms",name:"Attack",unit:"ms",min:1.0,max:2000.0,default:20.0,smoothing_ms:0.0 },
+    ParameterSpec { id:ids::KEYS_RELEASE_MS,key:"deep_keys.release_ms",name:"Release",unit:"ms",min:20.0,max:5000.0,default:600.0,smoothing_ms:0.0 },
 ];
 
 pub struct AudioBlockMut<'a> { samples:&'a mut [f32], channels:usize }
@@ -215,6 +227,243 @@ impl AudioProcessor for DeepGlue{
 }
 
 #[derive(Clone)]
+pub struct DeepKeysHandles {
+    pub volume_db: ParameterHandle,
+    pub cutoff_hz: ParameterHandle,
+    pub attack_ms: ParameterHandle,
+    pub release_ms: ParameterHandle,
+}
+
+impl DeepKeysHandles {
+    pub fn register(bank: &mut ParameterBank) -> Self {
+        Self {
+            volume_db: bank.register(KEYS_SPECS[0]),
+            cutoff_hz: bank.register(KEYS_SPECS[1]),
+            attack_ms: bank.register(KEYS_SPECS[2]),
+            release_ms: bank.register(KEYS_SPECS[3]),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum NoteEvent {
+    On { note: u8, velocity: f32 },
+    Off { note: u8 },
+    AllOff,
+}
+
+pub struct DeepKeysController {
+    sender: deep_rt::RtSender<NoteEvent>,
+}
+
+impl DeepKeysController {
+    pub fn channel(capacity: usize) -> (Self, deep_rt::RtReceiver<NoteEvent>) {
+        let (sender, receiver) = deep_rt::channel(capacity.max(8));
+        (Self { sender }, receiver)
+    }
+
+    pub fn note_on(&mut self, note: u8, velocity: f32) -> bool {
+        self.sender.try_send(NoteEvent::On {
+            note: note.min(127),
+            velocity: velocity.clamp(0.0, 1.0),
+        }).is_ok()
+    }
+
+    pub fn note_off(&mut self, note: u8) -> bool {
+        self.sender.try_send(NoteEvent::Off { note: note.min(127) }).is_ok()
+    }
+
+    pub fn all_off(&mut self) -> bool {
+        self.sender.try_send(NoteEvent::AllOff).is_ok()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum VoiceStage {
+    Off,
+    Attack,
+    Sustain,
+    Release,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Voice {
+    note: u8,
+    phase: f32,
+    velocity: f32,
+    envelope: f32,
+    stage: VoiceStage,
+}
+
+impl Voice {
+    const OFF: Self = Self {
+        note: 0,
+        phase: 0.0,
+        velocity: 0.0,
+        envelope: 0.0,
+        stage: VoiceStage::Off,
+    };
+}
+
+pub struct DeepKeys {
+    handles: DeepKeysHandles,
+    events: deep_rt::RtReceiver<NoteEvent>,
+    voices: [Voice; 8],
+    sample_rate: f32,
+    volume: LinearSmoother,
+    cutoff: LinearSmoother,
+    filter_left: f32,
+    filter_right: f32,
+}
+
+impl DeepKeys {
+    pub fn new(handles: DeepKeysHandles, events: deep_rt::RtReceiver<NoteEvent>) -> Self {
+        Self {
+            volume: LinearSmoother::new(db_to_gain(handles.volume_db.get())),
+            cutoff: LinearSmoother::new(handles.cutoff_hz.get()),
+            handles,
+            events,
+            voices: [Voice::OFF; 8],
+            sample_rate: 48_000.0,
+            filter_left: 0.0,
+            filter_right: 0.0,
+        }
+    }
+
+    fn handle_events(&mut self) {
+        while let Some(event) = self.events.try_recv() {
+            match event {
+                NoteEvent::On { note, velocity } => {
+                    let index = self.voices.iter().position(|voice| voice.stage == VoiceStage::Off)
+                        .unwrap_or_else(|| {
+                            self.voices.iter().enumerate()
+                                .min_by(|(_,a),(_,b)| a.envelope.total_cmp(&b.envelope))
+                                .map(|(index,_)|index)
+                                .unwrap_or(0)
+                        });
+                    self.voices[index] = Voice {
+                        note,
+                        phase: 0.0,
+                        velocity,
+                        envelope: 0.0,
+                        stage: VoiceStage::Attack,
+                    };
+                }
+                NoteEvent::Off { note } => {
+                    for voice in &mut self.voices {
+                        if voice.note == note && voice.stage != VoiceStage::Off {
+                            voice.stage = VoiceStage::Release;
+                        }
+                    }
+                }
+                NoteEvent::AllOff => {
+                    for voice in &mut self.voices {
+                        if voice.stage != VoiceStage::Off {
+                            voice.stage = VoiceStage::Release;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[inline]
+    fn midi_frequency(note: u8) -> f32 {
+        440.0 * 2.0_f32.powf((note as f32 - 69.0) / 12.0)
+    }
+}
+
+impl AudioProcessor for DeepKeys {
+    fn prepare(&mut self, sample_rate: f32, _max_block_frames: usize) {
+        self.sample_rate = sample_rate.max(1.0);
+        self.reset();
+    }
+
+    fn reset(&mut self) {
+        self.voices = [Voice::OFF; 8];
+        self.volume.reset(db_to_gain(self.handles.volume_db.get()));
+        self.cutoff.reset(self.handles.cutoff_hz.get());
+        self.filter_left = 0.0;
+        self.filter_right = 0.0;
+    }
+
+    fn process(&mut self, block: &mut AudioBlockMut<'_>, _context: ProcessContext) {
+        self.handle_events();
+        self.volume.set_target(
+            db_to_gain(self.handles.volume_db.get()),
+            self.sample_rate,
+            KEYS_SPECS[0].smoothing_ms,
+        );
+        self.cutoff.set_target(
+            self.handles.cutoff_hz.get(),
+            self.sample_rate,
+            KEYS_SPECS[1].smoothing_ms,
+        );
+
+        let attack_samples = (self.handles.attack_ms.get() * self.sample_rate / 1000.0).max(1.0);
+        let release_samples = (self.handles.release_ms.get() * self.sample_rate / 1000.0).max(1.0);
+        let channels = block.channels();
+
+        for frame in block.samples_mut().chunks_exact_mut(channels) {
+            let mut left = 0.0_f32;
+            let mut right = 0.0_f32;
+
+            for voice in &mut self.voices {
+                if voice.stage == VoiceStage::Off {
+                    continue;
+                }
+
+                match voice.stage {
+                    VoiceStage::Attack => {
+                        voice.envelope = (voice.envelope + 1.0 / attack_samples).min(1.0);
+                        if voice.envelope >= 1.0 {
+                            voice.stage = VoiceStage::Sustain;
+                        }
+                    }
+                    VoiceStage::Release => {
+                        voice.envelope = (voice.envelope - 1.0 / release_samples).max(0.0);
+                        if voice.envelope <= 0.0 {
+                            voice.stage = VoiceStage::Off;
+                            continue;
+                        }
+                    }
+                    VoiceStage::Sustain | VoiceStage::Off => {}
+                }
+
+                let frequency = Self::midi_frequency(voice.note);
+                voice.phase = (voice.phase + frequency / self.sample_rate).fract();
+                let phase = voice.phase * std::f32::consts::TAU;
+                let fundamental = phase.sin();
+                let second = (phase * 2.0).sin() * 0.22;
+                let third = (phase * 3.0).sin() * 0.08;
+                let sample = (fundamental + second + third) * voice.velocity * voice.envelope;
+
+                let pan = 0.18 + (voice.note % 12) as f32 / 11.0 * 0.64;
+                left += sample * (1.0 - pan).sqrt();
+                right += sample * pan.sqrt();
+            }
+
+            let volume = self.volume.next_value();
+            let cutoff = self.cutoff.next_value().clamp(20.0, self.sample_rate * 0.45);
+            let coefficient = (-std::f32::consts::TAU * cutoff / self.sample_rate).exp();
+            self.filter_left = coefficient * self.filter_left + (1.0 - coefficient) * left;
+            self.filter_right = coefficient * self.filter_right + (1.0 - coefficient) * right;
+
+            if channels == 1 {
+                frame[0] += (self.filter_left + self.filter_right) * 0.5 * volume;
+            } else {
+                frame[0] += self.filter_left * volume;
+                frame[1] += self.filter_right * volume;
+                for sample in frame.iter_mut().skip(2) {
+                    *sample += (self.filter_left + self.filter_right) * 0.5 * volume;
+                }
+            }
+        }
+    }
+}
+
+
+#[derive(Clone)]
 pub struct DeepMasterHandles {
     pub input_db: ParameterHandle,
     pub ceiling_db: ParameterHandle,
@@ -323,28 +572,43 @@ impl AudioProcessor for DeepMasterStage {
 /// Shared standalone signal path. The app and future render/export workers use
 /// this exact chain rather than duplicating DSP in UI code.
 pub struct DeepStudioChain {
+    keys: Option<DeepKeys>,
     glue: DeepGlue,
     master: DeepMasterStage,
 }
 
 impl DeepStudioChain {
     pub fn new(glue: DeepGlue, master: DeepMasterStage) -> Self {
-        Self { glue, master }
+        Self { keys: None, glue, master }
+    }
+
+    pub fn with_keys(mut self, keys: DeepKeys) -> Self {
+        self.keys = Some(keys);
+        self
     }
 }
 
 impl AudioProcessor for DeepStudioChain {
     fn prepare(&mut self, sample_rate: f32, max_block_frames: usize) {
+        if let Some(keys) = self.keys.as_mut() {
+            keys.prepare(sample_rate, max_block_frames);
+        }
         self.glue.prepare(sample_rate, max_block_frames);
         self.master.prepare(sample_rate, max_block_frames);
     }
 
     fn reset(&mut self) {
+        if let Some(keys) = self.keys.as_mut() {
+            keys.reset();
+        }
         self.glue.reset();
         self.master.reset();
     }
 
     fn process(&mut self, block: &mut AudioBlockMut<'_>, context: ProcessContext) {
+        if let Some(keys) = self.keys.as_mut() {
+            keys.process(block, context);
+        }
         self.glue.process(block, context);
         self.master.process(block, context);
     }
@@ -360,6 +624,19 @@ mod tests{
         gain.process(&mut block,ProcessContext{sample_rate:48_000.0});
         assert!(samples.iter().all(|s|s.is_finite())); assert!(samples[511]<0.6);
     }
+    #[test] fn keys_generate_audio_from_note_events(){
+        let mut bank=ParameterBank::new();
+        let handles=DeepKeysHandles::register(&mut bank);
+        let(mut controller,receiver)=DeepKeysController::channel(16);
+        let mut keys=DeepKeys::new(handles,receiver);
+        keys.prepare(48_000.0,256);
+        assert!(controller.note_on(60,1.0));
+        let mut samples=[0.0_f32;1024];
+        let mut block=AudioBlockMut::new(&mut samples,2).unwrap();
+        keys.process(&mut block,ProcessContext{sample_rate:48_000.0});
+        assert!(samples.iter().any(|sample|sample.abs()>1.0e-5));
+    }
+
     #[test] fn master_stage_enforces_ceiling(){
         let mut bank=ParameterBank::new();
         let handles=DeepMasterHandles::register(&mut bank);
