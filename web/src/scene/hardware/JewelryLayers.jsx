@@ -124,10 +124,18 @@ function MixJewelry(){
       height={.31}
       accent="#c59258"
       variant={i+2}
-      bindings={i===1?[
-        {id:NativeParam.GLUE_THRESHOLD_DB,min:-60,max:0,defaultValue:-18,step:.5},
-        {id:NativeParam.GLUE_RATIO,min:1,max:20,defaultValue:4,step:.25}
-      ]:[]}
+      bindings={
+        i===1?[
+          {id:NativeParam.GLUE_THRESHOLD_DB,min:-60,max:0,defaultValue:-18,step:.5},
+          {id:NativeParam.GLUE_RATIO,min:1,max:20,defaultValue:4,step:.25}
+        ]:i===2?[
+          {id:NativeParam.GLUE_ATTACK_MS,min:.1,max:100,defaultValue:10,step:.5},
+          {id:NativeParam.GLUE_RELEASE_MS,min:10,max:1500,defaultValue:120,step:5}
+        ]:i===3?[
+          {id:NativeParam.GLUE_MAKEUP_DB,min:-12,max:24,defaultValue:0,step:.25},
+          {id:NativeParam.GLUE_MIX_PERCENT,min:0,max:100,defaultValue:100,step:1}
+        ]:[]
+      }
     />)}</group>
   </group>;
 }
