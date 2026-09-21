@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useStudioStore } from '../store.js';
 import { KEYS, MUSICIANS, PROGRESSIONS, ROOMS, ROOM_SOUNDS, SOUNDS } from '../data.js';
 import { audioEngine } from '../audio/engine.js';
+import { isNativeShell, nativeAudioStatus, nativeMeter, startNativeAudio } from '../nativeBridge.js';
 
 function Brand(){
   return <div className="brand">
@@ -14,6 +15,34 @@ function TopBar(){
   const audioReady=useStudioStore((s)=>s.audioReady);
   const setMapOpen=useStudioStore((s)=>s.setMapOpen);
   const room=useStudioStore((s)=>s.room),setRoom=useStudioStore((s)=>s.setRoom);
+  const [nativeAudio,setNativeAudio]=useState({connected:isNativeShell(),running:false,backend:null});
+
+  useEffect(()=>{
+    let alive=true;
+    if(isNativeShell()){
+      nativeAudioStatus().then((status)=>{if(alive)setNativeAudio({connected:true,...status})}).catch(()=>{});
+    }
+    return()=>{alive=false};
+  },[]);
+
+  const activateAudio=async()=>{
+    if(isNativeShell()){
+      try{
+        const status=await startNativeAudio(false);
+        setNativeAudio({connected:true,...status});
+      }catch(error){
+        console.error('Native audio start failed',error);
+      }
+      return;
+    }
+    await audioEngine.init();
+  };
+
+  const ready=nativeAudio.connected?nativeAudio.running:audioReady;
+  const label=nativeAudio.connected
+    ?(ready?('RUST AUDIO · '+String(nativeAudio.backend||'native').toUpperCase()):'ACTIVAR AUDIO NATIVO')
+    :(audioReady?'AUDIO ON':'ACTIVAR AUDIO');
+
   return <header className="topbar">
     <Brand/>
     <nav className="workflow-nav" aria-label="Flujo de producción">{Object.entries(ROOMS).map(([id,r])=>
@@ -23,7 +52,7 @@ function TopBar(){
     )}</nav>
     <div className="top-tools">
       <button className="icon-button" aria-label="Mapa del estudio" onClick={()=>setMapOpen(true)}>⌘</button>
-      <button className={'audio-state '+(audioReady?'active':'')} onClick={()=>audioEngine.init()}><i/>{audioReady?'AUDIO ON':'ACTIVAR AUDIO'}</button>
+      <button className={'audio-state '+(ready?'active':'')} onClick={activateAudio}><i/>{label}</button>
     </div>
   </header>;
 }
@@ -54,9 +83,20 @@ const quick=[
 function QuickActions(){
   const openDrawer=useStudioStore((s)=>s.openDrawer);
   const room=useStudioStore((s)=>s.room),r=ROOMS[room];
+  const [rtMeter,setRtMeter]=useState(null);
   const roomStatus={practice:'BANDA PREPARADA',record:'SEÑAL ARMADA',production:'IDEA EN CURSO',mix:'MEZCLA ABIERTA',master:'MASTER LISTO'}[room];
   const signalLabel={practice:'Interpretación',record:'Entrada principal',production:'Bus creativo',mix:'Mezcla estéreo',master:'Salida final'}[room];
   const bars=[9,15,22,11,28,34,18,42,27,19,37,51,29,44,17,31,55,39,24,48,35,57,26,45,33,20,41,53,30,47,24,38,50,28,43,18,34,46,23,39,29,49,21,36,52,31,44,26];
+
+  useEffect(()=>{
+    if(!isNativeShell())return undefined;
+    let alive=true;
+    const tick=()=>nativeMeter().then((value)=>{if(alive)setRtMeter(value)}).catch(()=>{});
+    tick();
+    const id=setInterval(tick,50);
+    return()=>{alive=false;clearInterval(id)};
+  },[]);
+
   return <aside className="stage-console">
     <div className="stage-console-head">
       <div className="stage-identity"><span>{r.number}</span><div><b>{r.label}</b><small>{r.eyebrow.replace(/^SALA \d+ · /,'')}</small></div></div>
@@ -64,7 +104,7 @@ function QuickActions(){
     </div>
     <div className="stage-console-body">
       <div className="signal-strip">
-        <div className="signal-meta"><span>{signalLabel}</span><b>{room==='master'?'−9.2 LUFS':'00:00:00'}</b></div>
+        <div className="signal-meta"><span>{signalLabel}</span><b>{rtMeter&&room==='mix'?((rtMeter.gain_reduction_db??0).toFixed(1)+' dB GR'):(room==='master'?'−9.2 LUFS':'00:00:00')}</b></div>
         <div className="waveform" aria-hidden="true">{bars.map((h,i)=><i key={i} style={{height:h+'%'}}/>)}</div>
         <div className="channel-meter"><i/><i/></div>
       </div>
