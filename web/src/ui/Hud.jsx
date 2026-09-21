@@ -4,7 +4,7 @@ import ProjectBrowser from './ProjectBrowser.jsx';
 import { useStudioStore } from '../store.js';
 import { KEYS, MUSICIANS, PROGRESSIONS, ROOMS, ROOM_SOUNDS, SOUNDS } from '../data.js';
 import { audioEngine } from '../audio/engine.js';
-import { exportNativeRecording, isNativeShell, nativeAudioStatus, nativeMeter, nativeTransport, NativeParam, playNativeLastRecording, saveNativeSession, setNativeMetronome, setNativeParameter, setNativeRoom, startNativeAudio, startNativeRecording, stopNativePlayback, stopNativeRecording } from '../nativeBridge.js';
+import { exportNativeRecording, isNativeShell, nativeAllNotesOff, nativeAudioStatus, nativeMeter, nativeNoteOff, nativeNoteOn, nativeTransport, NativeParam, playNativeLastRecording, saveNativeSession, setNativeMetronome, setNativeParameter, setNativeRoom, startNativeAudio, startNativeRecording, stopNativePlayback, stopNativeRecording } from '../nativeBridge.js';
 
 function Brand(){
   return <div className="brand">
@@ -414,6 +414,73 @@ function Transport(){
   </footer>;
 }
 
+function NativeKeysInput(){
+  const room=useStudioStore((s)=>s.room);
+  const pressed=React.useRef(new Set());
+  const starting=React.useRef(null);
+  const keyMap=React.useMemo(()=>new Map([
+    ['z',60],['2',61],['x',62],['3',63],['c',64],['v',65],['5',66],
+    ['b',67],['6',68],['n',69],['7',70],['m',71],[',',72]
+  ]),[]);
+
+  useEffect(()=>{
+    if(!isNativeShell())return undefined;
+
+    const ensureAudio=async()=>{
+      const status=await nativeAudioStatus();
+      if(status.running)return status;
+      if(!starting.current){
+        starting.current=startNativeAudio(false).finally(()=>{starting.current=null;});
+      }
+      return starting.current;
+    };
+
+    const isTyping=()=>['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName)||document.activeElement?.isContentEditable;
+
+    const down=async(event)=>{
+      if(isTyping()||event.repeat)return;
+      const note=keyMap.get(event.key.toLowerCase());
+      if(note===undefined||pressed.current.has(event.key.toLowerCase()))return;
+      event.preventDefault();
+      const key=event.key.toLowerCase();
+      pressed.current.add(key);
+      try{
+        await ensureAudio();
+        await nativeNoteOn(note,.84);
+      }catch(error){
+        pressed.current.delete(key);
+        console.error('Deep Keys note on failed',error);
+      }
+    };
+
+    const up=(event)=>{
+      const key=event.key.toLowerCase();
+      const note=keyMap.get(key);
+      if(note===undefined||!pressed.current.has(key))return;
+      pressed.current.delete(key);
+      void nativeNoteOff(note);
+    };
+
+    const allOff=()=>{
+      pressed.current.clear();
+      void nativeAllNotesOff().catch(()=>{});
+    };
+
+    window.addEventListener('keydown',down);
+    window.addEventListener('keyup',up);
+    window.addEventListener('blur',allOff);
+    return()=>{
+      window.removeEventListener('keydown',down);
+      window.removeEventListener('keyup',up);
+      window.removeEventListener('blur',allOff);
+      allOff();
+    };
+  },[keyMap]);
+
+  if(room!=='production'||!isNativeShell())return null;
+  return <div className="native-keys-hint"><b>DEEP KEYS</b><span>Z X C V B N M · 2 3 5 6 7</span><small>TOCA DESDE EL TECLADO</small></div>;
+}
+
 function NativeRoomSync(){
   const room=useStudioStore((s)=>s.room);
   useEffect(()=>{
@@ -424,7 +491,7 @@ function NativeRoomSync(){
 
 export default function Hud(){
   return <div className="hud">
-    <NativeRoomSync/><TopBar/><RoomIntro/>
+    <NativeRoomSync/><NativeKeysInput/><TopBar/><RoomIntro/>
     <div className="movement-hint"><b>ARRASTRA</b> para mirar · <b>WASD</b> para moverte · <b>CLIC</b> para interactuar</div>
     <QuickActions/><ContextPanel/><Drawer/><StudioMap/><Transport/>
   </div>;
