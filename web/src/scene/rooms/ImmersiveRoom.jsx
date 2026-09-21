@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import AssetModel from '../../assets/AssetModel.jsx';
 import { getAsset } from '../../assets/assetRegistry.js';
 import { useStudioStore } from '../../store.js';
+import ProductionPremiumRoom from './ProductionPremiumRoom.jsx';
 
 const ROOM_DESIGNS = Object.freeze({
   practice: {
@@ -123,7 +124,10 @@ export default function ImmersiveRoom({ room, fallback }) {
     name={`${design.assetId}_scene`}
     userData={{ designSystem: 'blender-premium-v7', glbAvailable: asset.available }}
   >
-    <AssetModel assetId={design.assetId} fallback={fallback}/>
+    {room==='production'
+      ? <ProductionPremiumRoom/>
+      : <AssetModel assetId={design.assetId} fallback={fallback}/>}
+
     <DesignedLighting design={design}/>
     {design.hitboxes.map((hotspot) => <RoomHitbox key={hotspot.id} hotspot={hotspot} accent={design.accent}/>)}
   </group>;
