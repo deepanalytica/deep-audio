@@ -44,6 +44,11 @@ export async function nativeMeter(){
   return invoke('meter_snapshot');
 }
 
+export async function nativeAudioStatus(){
+  if(!isNativeShell())return {running:false,backend:'web'};
+  return invoke('audio_status');
+}
+
 export async function startNativeAudio(preferAsio=false){
   return invoke('start_audio',{preferAsio});
 }
