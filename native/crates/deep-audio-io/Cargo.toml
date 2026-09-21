@@ -1,0 +1,17 @@
+[package]
+name = "deep-audio-io"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[features]
+default = []
+native-audio = ["dep:cpal", "dep:rtrb"]
+asio = ["native-audio", "cpal/asio"]
+
+[dependencies]
+deep-dsp = { path = "../deep-dsp" }
+thiserror.workspace = true
+cpal = { workspace = true, optional = true }
+rtrb = { workspace = true, optional = true }

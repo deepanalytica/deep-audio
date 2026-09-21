@@ -1,0 +1,10 @@
+[package]
+name = "deep-dsp"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+deep-params = { path = "../deep-params" }
+deep-metering = { path = "../deep-metering" }
