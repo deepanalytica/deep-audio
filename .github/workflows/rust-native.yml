@@ -1,5 +1,9 @@
 name: Rust Native Platform
 
+concurrency:
+  group: rust-native-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [main, rust-native-platform]
