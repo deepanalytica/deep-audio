@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import AudioSetup from './AudioSetup.jsx';
 import { useStudioStore } from '../store.js';
 import { KEYS, MUSICIANS, PROGRESSIONS, ROOMS, ROOM_SOUNDS, SOUNDS } from '../data.js';
 import { audioEngine } from '../audio/engine.js';
@@ -16,6 +17,7 @@ function TopBar(){
   const setMapOpen=useStudioStore((s)=>s.setMapOpen);
   const room=useStudioStore((s)=>s.room),setRoom=useStudioStore((s)=>s.setRoom);
   const [nativeAudio,setNativeAudio]=useState({connected:isNativeShell(),running:false,backend:null});
+  const [audioSetupOpen,setAudioSetupOpen]=useState(false);
 
   useEffect(()=>{
     let alive=true;
@@ -52,8 +54,10 @@ function TopBar(){
     )}</nav>
     <div className="top-tools">
       <button className="icon-button" aria-label="Mapa del estudio" onClick={()=>setMapOpen(true)}>⌘</button>
+      {isNativeShell()&&<button className="icon-button io-button" aria-label="Configurar audio" onClick={()=>setAudioSetupOpen(true)}>I/O</button>}
       <button className={'audio-state '+(ready?'active':'')} onClick={activateAudio}><i/>{label}</button>
     </div>
+    <AudioSetup open={audioSetupOpen} onClose={()=>setAudioSetupOpen(false)} onStatus={(status)=>setNativeAudio({connected:true,...status})}/>
   </header>;
 }
 
