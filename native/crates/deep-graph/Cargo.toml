@@ -1,0 +1,10 @@
+[package]
+name = "deep-graph"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+deep-dsp = { path = "../deep-dsp" }
+deep-rt = { path = "../deep-rt" }

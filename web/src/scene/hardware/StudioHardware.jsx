@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
+import { isNativeShell, nativeNoteOff, nativeNoteOn, setNativeParameter } from '../../nativeBridge.js';
 import * as THREE from 'three';
 import { RoundedBox } from '@react-three/drei';
 
@@ -46,17 +47,83 @@ export function HardwareLED({position=[0,0,0],color='#67cf94',size=.012,intensit
   </group>;
 }
 
-export function HardwareKnob({position=[0,0,0],size=.045,color='#a9ada9',accent='#e3c48e',vertical=false}){
+export function HardwareKnob({position=[0,0,0],size=.045,color='#a9ada9',accent='#e3c48e',vertical=false,nativeBinding=null}){
   const rot=vertical?[Math.PI/2,0,0]:[0,0,0];
   const ticks=useMemo(()=>Array.from({length:11},(_,i)=>i),[]);
-  return <group position={position} rotation={rot}>
+  const [localValue,setLocalValue]=useState(nativeBinding?.defaultValue??0);
+  const drag=useRef(null);
+  const min=nativeBinding?.min??0,max=nativeBinding?.max??1;
+  const normalized=nativeBinding?Math.max(0,Math.min(1,(localValue-min)/Math.max(1e-9,max-min))):.5;
+  const valueAngle=(-.78+normalized*1.56)*Math.PI;
+
+  const setBoundValue=(value)=>{
+    if(!nativeBinding)return;
+    const next=Math.max(min,Math.min(max,value));
+    setLocalValue(next);
+    void setNativeParameter(nativeBinding.id,next);
+  };
+
+  const pointerY=(event)=>event?.nativeEvent?.clientY??event?.clientY??0;
+
+  const onPointerDown=(event)=>{
+    if(!nativeBinding)return;
+    event.stopPropagation();
+    drag.current={y:pointerY(event),value:localValue};
+    event.target?.setPointerCapture?.(event.pointerId);
+    document.body.style.cursor='ns-resize';
+  };
+
+  const onPointerMove=(event)=>{
+    if(!nativeBinding||!drag.current)return;
+    event.stopPropagation();
+    const range=max-min;
+    const sensitivity=nativeBinding.dragSensitivity??0.0045;
+    const delta=(drag.current.y-pointerY(event))*range*sensitivity;
+    setBoundValue(drag.current.value+delta);
+  };
+
+  const endDrag=(event)=>{
+    if(!drag.current)return;
+    event?.stopPropagation?.();
+    event?.target?.releasePointerCapture?.(event.pointerId);
+    drag.current=null;
+    document.body.style.cursor='';
+  };
+
+  const onWheel=(event)=>{
+    if(!nativeBinding)return;
+    event.stopPropagation();
+    const step=nativeBinding.step??((max-min)/100);
+    setBoundValue(localValue+(event.deltaY<0?step:-step));
+  };
+
+  const onDoubleClick=(event)=>{
+    if(!nativeBinding)return;
+    event.stopPropagation();
+    setBoundValue(nativeBinding.defaultValue??min);
+  };
+
+  return <group
+    position={position}
+    rotation={rot}
+    onPointerDown={onPointerDown}
+    onPointerMove={onPointerMove}
+    onPointerUp={endDrag}
+    onPointerCancel={endDrag}
+    onPointerOut={(event)=>{if(event.buttons===0)endDrag(event)}}
+    onWheel={onWheel}
+    onDoubleClick={onDoubleClick}
+    userData={nativeBinding?{interactive:true,parameterId:nativeBinding.id}:undefined}
+  >
     {ticks.map(i=>{
       const a=(-.78+i*(1.56/10))*Math.PI;
       return <mesh key={i} position={[Math.sin(a)*size*1.42,size*.03,Math.cos(a)*size*1.42]} rotation={[0,-a,0]}>
         <boxGeometry args={[size*.06,size*.035,size*.25]}/><meshStandardMaterial color="#8e8a80" roughness={.58}/></mesh>
     })}
-    <mesh castShadow><cylinderGeometry args={[size,size*1.04,size*.72,32]}/><meshPhysicalMaterial color={color} metalness={.6} roughness={.29} clearcoat={.12}/></mesh>
-    <mesh position={[0,size*.39,size*.38]}><boxGeometry args={[size*.09,size*.035,size*.66]}/><meshBasicMaterial color={accent}/></mesh>
+    <group rotation={[0,valueAngle,0]}>
+      <mesh castShadow><cylinderGeometry args={[size,size*1.04,size*.72,32]}/><meshPhysicalMaterial color={color} metalness={.6} roughness={.29} clearcoat={.12}/></mesh>
+      <mesh position={[0,size*.39,size*.38]}><boxGeometry args={[size*.09,size*.035,size*.66]}/><meshBasicMaterial color={accent}/></mesh>
+    </group>
   </group>;
 }
 
@@ -118,13 +185,13 @@ export function VUMeter({position=[0,0,0],rotation=[-Math.PI/2,0,0],accent='#d9a
   </group>;
 }
 
-export function RackFaceplate({position=[0,0,0],rotation=[0,0,0],width=1.1,height=.34,accent='#d9a45f',variant=0}){
+export function RackFaceplate({position=[0,0,0],rotation=[0,0,0],width=1.1,height=.34,accent='#d9a45f',variant=0,bindings=[]}){
   return <group position={position} rotation={rotation}>
     <RoundedBox args={[width,height,.055]} radius={.025} smoothness={3} castShadow receiveShadow>
       <meshPhysicalMaterial color={variant%2?'#2c2925':'#202426'} metalness={.46} roughness={.3}/>
     </RoundedBox>
-    <HardwareKnob position={[-width*.28,0,.045]} size={.034} color="#a9aaa5" accent={accent} vertical/>
-    <HardwareKnob position={[-width*.08,0,.045]} size={.038} color={accent} accent="#f1d9ad" vertical/>
+    <HardwareKnob position={[-width*.28,0,.045]} size={.034} color="#a9aaa5" accent={accent} vertical nativeBinding={bindings[0]}/>
+    <HardwareKnob position={[-width*.08,0,.045]} size={.038} color={accent} accent="#f1d9ad" vertical nativeBinding={bindings[1]}/>
     <HardwareToggle position={[width*.12,0,.045]} on={variant%3!==0} accent={accent} verticalSurface/>
     <HardwareLED position={[width*.3,.06,.045]} color="#65c992" size={.01}/>
     <HardwareLED position={[width*.4,.06,.045]} color={variant%2?'#d46f56':'#cba45b'} size={.01}/>
@@ -133,23 +200,75 @@ export function RackFaceplate({position=[0,0,0],rotation=[0,0,0],width=1.1,heigh
   </group>;
 }
 
-export function PianoKeybed({position=[0,0,0],rotation=[0,0,0],octaves=4,width=2.75}){
+export function PianoKeybed({position=[0,0,0],rotation=[0,0,0],octaves=4,width=2.75,baseMidi=48,nativePlayable=false}){
   const whiteCount=octaves*7;
   const keyW=width/whiteCount;
-  const blackPattern=[0,1,0,1,0,0,1,0,1,0,1,0];
-  const blackPositions=[];
-  for(let o=0;o<octaves;o++){
-    const base=o*7;
-    [0,1,3,4,5].forEach(step=>blackPositions.push(base+step+.68));
+  const whiteSemitones=[0,2,4,5,7,9,11];
+  const blackSteps=[
+    {white:0,semitone:1},
+    {white:1,semitone:3},
+    {white:3,semitone:6},
+    {white:4,semitone:8},
+    {white:5,semitone:10}
+  ];
+  const blackKeys=[];
+  for(let octave=0;octave<octaves;octave++){
+    for(const step of blackSteps){
+      blackKeys.push({
+        position:octave*7+step.white+.68,
+        note:baseMidi+octave*12+step.semitone
+      });
+    }
   }
-  return <group position={position} rotation={rotation}>
+
+  const noteDown=(event,note)=>{
+    if(!nativePlayable||!isNativeShell())return;
+    event.stopPropagation();
+    event.target?.setPointerCapture?.(event.pointerId);
+    void nativeNoteOn(note,.84);
+  };
+  const noteUp=(event,note)=>{
+    if(!nativePlayable||!isNativeShell())return;
+    event.stopPropagation();
+    event.target?.releasePointerCapture?.(event.pointerId);
+    void nativeNoteOff(note);
+  };
+
+  return <group position={position} rotation={rotation} userData={nativePlayable?{instrument:'deep_keys',interactive:true}:undefined}>
     <RoundedBox args={[width+.12,.08,.72]} radius={.035} smoothness={3} position={[0,-.045,0]}>
       <meshPhysicalMaterial color="#121313" metalness={.16} roughness={.34}/>
     </RoundedBox>
-    {Array.from({length:whiteCount},(_,i)=><RoundedBox key={'w'+i} args={[keyW*.93,.055,.62]} radius={.008} smoothness={2} position={[-width/2+keyW/2+i*keyW,0,.035]} castShadow>
-      <meshPhysicalMaterial color="#ece8de" roughness={.31} clearcoat={.08}/>
-    </RoundedBox>)}
-    {blackPositions.map((p,i)=><RoundedBox key={'b'+i} args={[keyW*.58,.068,.39]} radius={.007} smoothness={2} position={[-width/2+p*keyW,.038,-.08]} castShadow>
+    {Array.from({length:whiteCount},(_,i)=>{
+      const octave=Math.floor(i/7);
+      const degree=i%7;
+      const note=baseMidi+octave*12+whiteSemitones[degree];
+      return <RoundedBox
+        key={'w'+i}
+        args={[keyW*.93,.055,.62]}
+        radius={.008}
+        smoothness={2}
+        position={[-width/2+keyW/2+i*keyW,0,.035]}
+        castShadow
+        onPointerDown={(event)=>noteDown(event,note)}
+        onPointerUp={(event)=>noteUp(event,note)}
+        onPointerCancel={(event)=>noteUp(event,note)}
+        onPointerOut={(event)=>{if(event.buttons===0)noteUp(event,note)}}
+      >
+        <meshPhysicalMaterial color="#ece8de" roughness={.31} clearcoat={.08}/>
+      </RoundedBox>;
+    })}
+    {blackKeys.map((key,i)=><RoundedBox
+      key={'b'+i}
+      args={[keyW*.58,.068,.39]}
+      radius={.007}
+      smoothness={2}
+      position={[-width/2+key.position*keyW,.038,-.08]}
+      castShadow
+      onPointerDown={(event)=>noteDown(event,key.note)}
+      onPointerUp={(event)=>noteUp(event,key.note)}
+      onPointerCancel={(event)=>noteUp(event,key.note)}
+      onPointerOut={(event)=>{if(event.buttons===0)noteUp(event,key.note)}}
+    >
       <meshPhysicalMaterial color="#171818" roughness={.24} clearcoat={.16}/>
     </RoundedBox>)}
   </group>;

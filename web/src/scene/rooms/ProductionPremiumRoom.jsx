@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
+import { NativeParam } from '../../nativeBridge.js';
 import { RoundedBox } from '@react-three/drei';
 import {
   AmpControlStrip,
@@ -117,7 +118,7 @@ function Desk(){
     <mesh position={[2.35,.45,.15]} castShadow><boxGeometry args={[.18,.96,.72]}/><MetalMaterial/></mesh>
     <mesh position={[0,.26,.42]} castShadow><boxGeometry args={[4.6,.12,.28]}/><MetalMaterial color="#252829"/></mesh>
 
-    <PianoKeybed position={[0,1.08,.12]} rotation={[-.02,0,0]} octaves={5} width={3.65}/>
+    <PianoKeybed position={[0,1.08,.12]} rotation={[-.02,0,0]} octaves={5} width={3.65} baseMidi={48} nativePlayable/>
 
     <group position={[0,1.23,-.46]} rotation={[-.05,0,0]}>
       <HardwareDisplay position={[0,.02,-.1]} width={1.05} height={.23} title="DEEP PRODUCER" value="POLY 01" unit="SESSION" accent={PURPLE} mode="curve"/>
@@ -136,10 +137,11 @@ function Desk(){
       <HardwareButton position={[.1,0,0]} size={.065} accent={PURPLE}/>
       <HardwareToggle position={[.22,.015,0]} on accent={PURPLE}/>
     </group>
-    <group position={[1.78,1.19,-.35]}>
-      <HardwareKnob position={[0,.02,0]} size={.05} color={BRASS} accent="#f1dab0"/>
-      <HardwareKnob position={[.19,.02,0]} size={.036} color="#aeb0aa" accent={BRASS}/>
-      <HardwareKnob position={[.35,.02,0]} size={.036} color="#aeb0aa" accent={CYAN}/>
+    <group position={[1.72,1.19,-.35]}>
+      <HardwareKnob position={[-.08,.02,0]} size={.05} color={BRASS} accent="#f1dab0" nativeBinding={{id:NativeParam.KEYS_VOLUME_DB,min:-60,max:6,defaultValue:-12,step:.5}}/>
+      <HardwareKnob position={[.10,.02,0]} size={.038} color="#aeb0aa" accent={CYAN} nativeBinding={{id:NativeParam.KEYS_CUTOFF_HZ,min:200,max:18000,defaultValue:6000,step:100}}/>
+      <HardwareKnob position={[.27,.02,0]} size={.034} color="#aeb0aa" accent={PURPLE} nativeBinding={{id:NativeParam.KEYS_ATTACK_MS,min:1,max:2000,defaultValue:20,step:10}}/>
+      <HardwareKnob position={[.43,.02,0]} size={.034} color="#aeb0aa" accent={BRASS} nativeBinding={{id:NativeParam.KEYS_RELEASE_MS,min:20,max:5000,defaultValue:600,step:20}}/>
     </group>
   </group>;
 }

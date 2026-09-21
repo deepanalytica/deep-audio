@@ -1,0 +1,17 @@
+[package]
+name = "deep-audio-lab"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[features]
+default = []
+native-audio = ["deep-audio-io/native-audio"]
+asio = ["native-audio", "deep-audio-io/asio"]
+
+[dependencies]
+deep-audio-io = { path = "../../crates/deep-audio-io" }
+deep-dsp = { path = "../../crates/deep-dsp" }
+deep-metering = { path = "../../crates/deep-metering" }
+deep-params = { path = "../../crates/deep-params" }

@@ -1,0 +1,571 @@
+#![forbid(unsafe_code)]
+
+use deep_dsp::{DeepGlueHandles,DeepKeys,DeepKeysController,DeepKeysHandles,DeepMasterHandles,DeepMasterStage,DeepStudioChain};
+use deep_metering::{MeterSnapshot,SharedMeter};
+use deep_params::{ParameterBank,ParameterId,ParameterSnapshot};
+use deep_playback::{PlaybackController,PlaybackSpec};
+use deep_record::{RecorderController,RecordingSpec,RecordingSummary};
+use deep_session::{ClipState,ExportState,RoomId,Session,CURRENT_SCHEMA_VERSION};
+use deep_transport::{SharedTransport,TransportSnapshot as RtTransportSnapshot};
+use serde::{Deserialize,Serialize};
+use std::path::{Path,PathBuf};
+use std::sync::Mutex;
+use std::time::{SystemTime,UNIX_EPOCH};
+
+#[derive(Serialize)]
+struct Health{
+    product:&'static str,
+    rust_core:bool,
+    native_audio_compiled:bool,
+    asio_compiled:bool,
+    schema_version:u32,
+}
+
+#[derive(Serialize,Clone)]
+struct ProjectInfo{
+    name:String,
+    path:String,
+    modified_unix:u64,
+}
+
+#[derive(Serialize,Clone)]
+struct AudioStatus{
+    running:bool,
+    backend:String,
+    sample_rate:Option<u32>,
+    input_channels:Option<u16>,
+    output_channels:Option<u16>,
+    input_device:Option<String>,
+    output_device:Option<String>,
+}
+
+#[derive(Serialize,Deserialize,Clone,Default)]
+struct AudioPreferences{
+    prefer_asio:bool,
+    input_device:Option<String>,
+    output_device:Option<String>,
+}
+
+struct AudioService{
+    stop:std::sync::mpsc::Sender<()>,
+    recorder:RecorderController,
+    playback:PlaybackController,
+    info:deep_audio_io::native::StreamInfo,
+    backend:String,
+}
+
+struct EngineState{
+    params:ParameterBank,
+    glue_handles:DeepGlueHandles,
+    master_handles:DeepMasterHandles,
+    keys_handles:DeepKeysHandles,
+    keys_control:Mutex<Option<DeepKeysController>>,
+    meter:SharedMeter,
+    transport:SharedTransport,
+    audio:Mutex<Option<AudioService>>,
+    session:Mutex<Session>,
+    last_recording:Mutex<Option<RecordingSummary>>,
+}
+
+impl EngineState{
+    fn new()->Self{
+        let mut params=ParameterBank::new();
+        let glue_handles=DeepGlueHandles::register(&mut params);
+        let master_handles=DeepMasterHandles::register(&mut params);
+        let keys_handles=DeepKeysHandles::register(&mut params);
+        Self{
+            params,
+            glue_handles,
+            master_handles,
+            keys_handles,
+            keys_control:Mutex::new(None),
+            meter:SharedMeter::new(),
+            transport:SharedTransport::default(),
+            audio:Mutex::new(None),
+            session:Mutex::new(Session::new("Deep Session")),
+            last_recording:Mutex::new(None),
+        }
+    }
+}
+
+fn unix_now()->u64{
+    SystemTime::now().duration_since(UNIX_EPOCH).map(|d|d.as_secs()).unwrap_or(0)
+}
+
+fn home_dir()->PathBuf{
+    std::env::var_os("USERPROFILE")
+        .or_else(||std::env::var_os("HOME"))
+        .map(PathBuf::from)
+        .unwrap_or_else(std::env::temp_dir)
+}
+
+fn product_root()->PathBuf{
+    home_dir().join("Music").join("Deep Music Producer")
+}
+
+fn audio_preferences_path()->PathBuf{
+    product_root().join("Config").join("audio.json")
+}
+
+fn read_audio_preferences()->AudioPreferences{
+    let path=audio_preferences_path();
+    std::fs::read_to_string(path)
+        .ok()
+        .and_then(|raw|serde_json::from_str::<AudioPreferences>(&raw).ok())
+        .unwrap_or_default()
+}
+
+fn write_audio_preferences(preferences:&AudioPreferences)->Result<(),String>{
+    let path=audio_preferences_path();
+    if let Some(parent)=path.parent(){std::fs::create_dir_all(parent).map_err(|e|e.to_string())?;}
+    let json=serde_json::to_string_pretty(preferences).map_err(|e|e.to_string())?;
+    let temporary=path.with_extension("json.tmp");
+    std::fs::write(&temporary,json).map_err(|e|e.to_string())?;
+    if path.exists(){std::fs::remove_file(&path).map_err(|e|e.to_string())?;}
+    std::fs::rename(temporary,path).map_err(|e|e.to_string())
+}
+
+fn sanitized_name(value:&str)->String{
+    let mut out=String::with_capacity(value.len());
+    for ch in value.chars(){
+        if ch.is_ascii_alphanumeric()||matches!(ch,'-'|'_'|' '){out.push(ch);}else{out.push('_');}
+    }
+    let out=out.trim().trim_matches('.').to_string();
+    if out.is_empty(){"Deep Session".into()}else{out}
+}
+
+fn session_transport_from_rt(snapshot:RtTransportSnapshot)->deep_session::TransportSnapshot{
+    deep_session::TransportSnapshot{
+        playing:snapshot.playing,
+        recording:snapshot.recording,
+        position_samples:snapshot.position_samples,
+        bpm:snapshot.bpm,
+    }
+}
+
+fn status_from_service(service:&AudioService)->AudioStatus{
+    AudioStatus{
+        running:true,
+        backend:service.backend.clone(),
+        sample_rate:Some(service.info.sample_rate),
+        input_channels:Some(service.info.input_channels),
+        output_channels:Some(service.info.output_channels),
+        input_device:Some(service.info.input_device.clone()),
+        output_device:Some(service.info.output_device.clone()),
+    }
+}
+
+#[tauri::command]
+fn health()->Health{Health{
+    product:"Deep Music Producer",
+    rust_core:true,
+    native_audio_compiled:cfg!(feature="native-audio"),
+    asio_compiled:cfg!(feature="asio"),
+    schema_version:CURRENT_SCHEMA_VERSION
+}}
+
+#[tauri::command]
+fn parameter_snapshot(state:tauri::State<'_,EngineState>)->Vec<ParameterSnapshot>{state.params.snapshots()}
+
+#[tauri::command]
+fn set_parameter(state:tauri::State<'_,EngineState>,id:u32,value:f32)->Result<f32,String>{
+    let parameter_id=ParameterId(id);
+    if !state.params.set(parameter_id,value){return Err(format!("unknown parameter id {id}"));}
+    let applied=state.params.get(parameter_id).expect("parameter exists").get();
+    let device_type=if (8000..9000).contains(&id){"deep_keys"}else if (7000..8000).contains(&id){"deep_master"}else{"deep_glue"};
+    if let Ok(mut session)=state.session.lock(){session.set_parameter(device_type,parameter_id,applied);}
+    Ok(applied)
+}
+
+#[tauri::command]
+fn meter_snapshot(state:tauri::State<'_,EngineState>)->MeterSnapshot{state.meter.snapshot()}
+
+#[tauri::command]
+fn transport_snapshot(state:tauri::State<'_,EngineState>)->RtTransportSnapshot{state.transport.snapshot()}
+
+#[tauri::command]
+fn transport_command(
+    state:tauri::State<'_,EngineState>,
+    action:String,
+    bpm:Option<f64>,
+    position_samples:Option<u64>,
+)->Result<RtTransportSnapshot,String>{
+    if let Some(bpm)=bpm{state.transport.set_bpm(bpm);}
+    if let Some(position)=position_samples{state.transport.seek_samples(position);}
+    match action.as_str(){
+        "play"=>state.transport.play(),
+        "pause"=>state.transport.pause(),
+        "stop"=>state.transport.stop(),
+        "seek"=>{},
+        "bpm"=>{},
+        other=>return Err(format!("unknown transport action {other}")),
+    }
+    let snapshot=state.transport.snapshot();
+    if let Ok(mut session)=state.session.lock(){session.transport=session_transport_from_rt(snapshot);}
+    Ok(snapshot)
+}
+
+#[tauri::command]
+fn set_metronome(state:tauri::State<'_,EngineState>,enabled:bool)->RtTransportSnapshot{
+    state.transport.set_metronome(enabled);
+    state.transport.snapshot()
+}
+
+#[tauri::command]
+fn set_room(state:tauri::State<'_,EngineState>,room:String)->Result<(),String>{
+    let room=RoomId::parse(&room).ok_or_else(||format!("unknown room {room}"))?;
+    let mut session=state.session.lock().map_err(|_|"session lock poisoned".to_string())?;
+    session.active_room=room;
+    Ok(())
+}
+
+#[tauri::command]
+fn session_snapshot(state:tauri::State<'_,EngineState>)->Result<Session,String>{
+    let mut session=state.session.lock().map_err(|_|"session lock poisoned".to_string())?;
+    session.transport=session_transport_from_rt(state.transport.snapshot());
+    Ok(session.clone())
+}
+
+#[tauri::command]
+fn save_session(state:tauri::State<'_,EngineState>,name:Option<String>)->Result<String,String>{
+    let mut session=state.session.lock().map_err(|_|"session lock poisoned".to_string())?;
+    if let Some(name)=name{session.name=sanitized_name(&name);}
+    session.schema_version=CURRENT_SCHEMA_VERSION;
+    session.transport=session_transport_from_rt(state.transport.snapshot());
+    let dir=product_root().join("Projects");
+    std::fs::create_dir_all(&dir).map_err(|e|e.to_string())?;
+    let path=dir.join(format!("{}.deepmusic.json",sanitized_name(&session.name)));
+    let json=serde_json::to_string_pretty(&*session).map_err(|e|e.to_string())?;
+    std::fs::write(&path,json).map_err(|e|e.to_string())?;
+    Ok(path.to_string_lossy().into_owned())
+}
+
+#[tauri::command]
+fn list_sessions()->Result<Vec<ProjectInfo>,String>{
+    let dir=product_root().join("Projects");
+    if !dir.exists(){return Ok(Vec::new());}
+    let mut projects=Vec::new();
+    for entry in std::fs::read_dir(&dir).map_err(|e|e.to_string())?{
+        let entry=entry.map_err(|e|e.to_string())?;
+        let path=entry.path();
+        let Some(file_name)=path.file_name().and_then(|value|value.to_str()) else{continue;};
+        if !file_name.ends_with(".deepmusic.json"){continue;}
+        let modified_unix=entry.metadata().ok()
+            .and_then(|meta|meta.modified().ok())
+            .and_then(|time|time.duration_since(UNIX_EPOCH).ok())
+            .map(|duration|duration.as_secs())
+            .unwrap_or(0);
+        projects.push(ProjectInfo{
+            name:file_name.trim_end_matches(".deepmusic.json").to_string(),
+            path:path.to_string_lossy().into_owned(),
+            modified_unix,
+        });
+    }
+    projects.sort_by(|a,b|b.modified_unix.cmp(&a.modified_unix));
+    Ok(projects)
+}
+
+#[tauri::command]
+fn load_session(state:tauri::State<'_,EngineState>,path:String)->Result<Session,String>{
+    let raw=std::fs::read_to_string(&path).map_err(|e|e.to_string())?;
+    let mut loaded:Session=serde_json::from_str(&raw).map_err(|e|e.to_string())?;
+    loaded.schema_version=CURRENT_SCHEMA_VERSION;
+    for device in &loaded.devices{
+        for parameter in &device.parameters{
+            let _=state.params.set(parameter.id,parameter.value);
+        }
+    }
+    state.transport.set_bpm(loaded.transport.bpm);
+    state.transport.seek_samples(loaded.transport.position_samples);
+    state.transport.pause();
+    state.transport.set_recording(false);
+    loaded.transport.playing=false;
+    loaded.transport.recording=false;
+
+    let latest_clip=loaded.tracks.iter()
+        .flat_map(|track|track.clips.iter())
+        .max_by_key(|clip|clip.start_sample.saturating_add(clip.length_samples))
+        .cloned();
+
+    if let Some(clip)=latest_clip{
+        if let Ok(mut last)=state.last_recording.lock(){
+            *last=Some(RecordingSummary{
+                path:clip.path,
+                sample_rate:clip.sample_rate,
+                channels:clip.channels,
+                frames:clip.length_samples,
+                dropped_samples:0,
+            });
+        }
+    }
+
+    let mut session=state.session.lock().map_err(|_|"session lock poisoned".to_string())?;
+    *session=loaded.clone();
+    Ok(loaded)
+}
+
+#[tauri::command]
+fn audio_preferences()->AudioPreferences{read_audio_preferences()}
+
+#[tauri::command]
+fn audio_status(state:tauri::State<'_,EngineState>)->AudioStatus{
+    state.audio.lock().ok().and_then(|slot|slot.as_ref().map(status_from_service)).unwrap_or(AudioStatus{
+        running:false,backend:"native".into(),sample_rate:None,input_channels:None,output_channels:None,input_device:None,output_device:None
+    })
+}
+
+#[cfg(feature="native-audio")]
+#[tauri::command]
+fn list_audio_devices(prefer_asio:bool)->Result<Vec<deep_audio_io::native::AudioDeviceInfo>,String>{
+    use deep_audio_io::{BackendPreference,native::list_devices};
+    let preference=if prefer_asio{BackendPreference::Asio}else{BackendPreference::Default};
+    list_devices(preference).map_err(|e|e.to_string())
+}
+
+#[cfg(not(feature="native-audio"))]
+#[tauri::command]
+fn list_audio_devices(_:bool)->Result<Vec<String>,String>{
+    Err("native audio is disabled in this build".into())
+}
+
+#[cfg(feature="native-audio")]
+#[tauri::command]
+fn start_audio(
+    state:tauri::State<'_,EngineState>,
+    prefer_asio:bool,
+    input_device:Option<String>,
+    output_device:Option<String>,
+)->Result<AudioStatus,String>{
+    use deep_audio_io::{BackendPreference,native::CpalDuplex};
+    use deep_dsp::DeepGlue;
+    use std::time::Duration;
+
+    let mut slot=state.audio.lock().map_err(|_|"audio service lock poisoned".to_string())?;
+    if let Some(service)=slot.as_ref(){return Ok(status_from_service(service));}
+
+    let glue_handles=state.glue_handles.clone();
+    let master_handles=state.master_handles.clone();
+    let keys_handles=state.keys_handles.clone();
+    let meter=state.meter.clone();
+    let transport=state.transport.clone();
+    let recorder_capacity=48_000usize*2*8;
+    let(recorder,record_tap)=RecorderController::new(recorder_capacity);
+    let(playback,playback_tap)=PlaybackController::new(recorder_capacity);
+    let(keys_controller,keys_events)=DeepKeysController::channel(128);
+    let(ready_tx,ready_rx)=std::sync::mpsc::channel::<Result<deep_audio_io::native::StreamInfo,String>>();
+    let(stop_tx,stop_rx)=std::sync::mpsc::channel::<()>();
+    let preference=if prefer_asio{BackendPreference::Asio}else{BackendPreference::Default};
+
+    std::thread::Builder::new().name("deep-audio-service".into()).spawn(move||{
+        let glue=DeepGlue::new(glue_handles,meter.clone());
+        let master=DeepMasterStage::new(master_handles,meter);
+        let keys=DeepKeys::new(keys_handles,keys_events);
+        let processor=DeepStudioChain::new(glue,master).with_keys(keys);
+        match CpalDuplex::start_with_devices(
+            processor,
+            preference,
+            Some(record_tap),
+            Some(playback_tap),
+            Some(transport),
+            input_device.as_deref(),
+            output_device.as_deref(),
+        ){
+            Ok(stream)=>{
+                let _=ready_tx.send(Ok(stream.info().clone()));
+                let _=stop_rx.recv();
+                drop(stream);
+            }
+            Err(error)=>{let _=ready_tx.send(Err(error.to_string()));}
+        }
+    }).map_err(|error|error.to_string())?;
+
+    match ready_rx.recv_timeout(Duration::from_secs(5)){
+        Ok(Ok(info))=>{
+            let backend=if prefer_asio{"asio".into()}else{"default".into()};
+            let service=AudioService{stop:stop_tx,recorder,playback,info,backend};
+            let status=status_from_service(&service);
+            let _=write_audio_preferences(&AudioPreferences{
+                prefer_asio,
+                input_device:status.input_device.clone(),
+                output_device:status.output_device.clone(),
+            });
+            if let Ok(mut session)=state.session.lock(){
+                if let Some(sample_rate)=status.sample_rate{session.sample_rate=sample_rate;}
+            }
+            *slot=Some(service);
+            *state.keys_control.lock().map_err(|_|"keys control lock poisoned".to_string())?=Some(keys_controller);
+            Ok(status)
+        }
+        Ok(Err(error))=>Err(error),
+        Err(error)=>Err(format!("audio service startup timeout: {error}")),
+    }
+}
+
+#[cfg(not(feature="native-audio"))]
+#[tauri::command]
+fn start_audio(
+    _:tauri::State<'_,EngineState>,
+    _:bool,
+    _:Option<String>,
+    _:Option<String>,
+)->Result<AudioStatus,String>{
+    Err("native audio is disabled in this build; enable feature native-audio".into())
+}
+
+#[tauri::command]
+fn stop_audio(state:tauri::State<'_,EngineState>)->Result<(),String>{
+    let mut slot=state.audio.lock().map_err(|_|"audio service lock poisoned".to_string())?;
+    if let Some(mut service)=slot.take(){
+        if service.recorder.is_recording(){
+            let _=service.recorder.stop();
+        }
+        service.playback.stop();
+        service.playback.shutdown();
+        service.recorder.shutdown();
+        let _=service.stop.send(());
+    }
+    if let Ok(mut keys)=state.keys_control.lock(){
+        if let Some(controller)=keys.as_mut(){let _=controller.all_off();}
+        *keys=None;
+    }
+    state.transport.stop();
+    Ok(())
+}
+
+#[tauri::command]
+fn note_on(state:tauri::State<'_,EngineState>,note:u8,velocity:f32)->Result<(),String>{
+    let mut control=state.keys_control.lock().map_err(|_|"keys control lock poisoned".to_string())?;
+    let controller=control.as_mut().ok_or_else(||"native audio engine is not running".to_string())?;
+    if controller.note_on(note,velocity){Ok(())}else{Err("note event queue is full".into())}
+}
+
+#[tauri::command]
+fn note_off(state:tauri::State<'_,EngineState>,note:u8)->Result<(),String>{
+    let mut control=state.keys_control.lock().map_err(|_|"keys control lock poisoned".to_string())?;
+    let controller=control.as_mut().ok_or_else(||"native audio engine is not running".to_string())?;
+    if controller.note_off(note){Ok(())}else{Err("note event queue is full".into())}
+}
+
+#[tauri::command]
+fn all_notes_off(state:tauri::State<'_,EngineState>)->Result<(),String>{
+    let mut control=state.keys_control.lock().map_err(|_|"keys control lock poisoned".to_string())?;
+    let controller=control.as_mut().ok_or_else(||"native audio engine is not running".to_string())?;
+    if controller.all_off(){Ok(())}else{Err("note event queue is full".into())}
+}
+
+#[tauri::command]
+fn start_recording(state:tauri::State<'_,EngineState>,name:Option<String>)->Result<String,String>{
+    let slot=state.audio.lock().map_err(|_|"audio service lock poisoned".to_string())?;
+    let service=slot.as_ref().ok_or_else(||"start native audio before recording".to_string())?;
+    if service.recorder.is_recording(){return Err("recording already active".into());}
+    let base=sanitized_name(name.as_deref().unwrap_or("take"));
+    let path=product_root().join("Recordings").join(format!("{base}-{}.wav",unix_now()));
+    let spec=RecordingSpec{sample_rate:service.info.sample_rate,channels:service.info.output_channels.max(1)};
+    let started=service.recorder.start(&path,spec).map_err(|e|e.to_string())?;
+    state.transport.set_recording(true);
+    if let Ok(mut session)=state.session.lock(){session.transport=session_transport_from_rt(state.transport.snapshot());}
+    Ok(started)
+}
+
+#[tauri::command]
+fn stop_recording(state:tauri::State<'_,EngineState>)->Result<RecordingSummary,String>{
+    let slot=state.audio.lock().map_err(|_|"audio service lock poisoned".to_string())?;
+    let service=slot.as_ref().ok_or_else(||"audio engine is not running".to_string())?;
+    let start_sample=state.transport.snapshot().position_samples;
+    let summary=service.recorder.stop().map_err(|e|e.to_string())?;
+    state.transport.set_recording(false);
+
+    {
+        let mut session=state.session.lock().map_err(|_|"session lock poisoned".to_string())?;
+        let clip_start=start_sample.saturating_sub(summary.frames);
+        session.append_recording(ClipState{
+            id:format!("clip-{}",unix_now()),
+            path:summary.path.clone(),
+            start_sample:clip_start,
+            length_samples:summary.frames,
+            sample_rate:summary.sample_rate,
+            channels:summary.channels,
+        });
+        session.transport=session_transport_from_rt(state.transport.snapshot());
+    }
+    if let Ok(mut last)=state.last_recording.lock(){*last=Some(summary.clone());}
+    Ok(summary)
+}
+
+#[tauri::command]
+fn play_last_recording(state:tauri::State<'_,EngineState>)->Result<String,String>{
+    let summary=state.last_recording.lock().map_err(|_|"recording state lock poisoned".to_string())?
+        .clone().ok_or_else(||"no completed recording to play".to_string())?;
+    let slot=state.audio.lock().map_err(|_|"audio service lock poisoned".to_string())?;
+    let service=slot.as_ref().ok_or_else(||"audio engine is not running".to_string())?;
+    let path=service.playback.play(
+        &summary.path,
+        PlaybackSpec{sample_rate:service.info.sample_rate,channels:service.info.output_channels.max(1)}
+    ).map_err(|e|e.to_string())?;
+    state.transport.seek_samples(0);
+    state.transport.play();
+    Ok(path)
+}
+
+#[tauri::command]
+fn stop_playback(state:tauri::State<'_,EngineState>)->Result<(),String>{
+    let slot=state.audio.lock().map_err(|_|"audio service lock poisoned".to_string())?;
+    if let Some(service)=slot.as_ref(){service.playback.stop();}
+    state.transport.pause();
+    Ok(())
+}
+
+#[tauri::command]
+fn export_last_recording(state:tauri::State<'_,EngineState>,name:Option<String>)->Result<String,String>{
+    let summary=state.last_recording.lock().map_err(|_|"recording state lock poisoned".to_string())?
+        .clone().ok_or_else(||"no completed recording to export".to_string())?;
+    let source=Path::new(&summary.path);
+    if !source.exists(){return Err("last recording file no longer exists".into());}
+    let export_name=sanitized_name(name.as_deref().unwrap_or("Deep Music Export"));
+    let dir=product_root().join("Exports");
+    std::fs::create_dir_all(&dir).map_err(|e|e.to_string())?;
+    let destination=dir.join(format!("{export_name}-{}.wav",unix_now()));
+    std::fs::copy(source,&destination).map_err(|e|e.to_string())?;
+    if let Ok(mut session)=state.session.lock(){
+        session.exports.push(ExportState{
+            path:destination.to_string_lossy().into_owned(),
+            created_unix:unix_now(),
+            format:"wav-f32".into(),
+        });
+    }
+    Ok(destination.to_string_lossy().into_owned())
+}
+
+pub fn run(){
+    tauri::Builder::default()
+        .manage(EngineState::new())
+        .invoke_handler(tauri::generate_handler![
+            health,
+            parameter_snapshot,
+            set_parameter,
+            meter_snapshot,
+            transport_snapshot,
+            transport_command,
+            set_metronome,
+            set_room,
+            session_snapshot,
+            save_session,
+            list_sessions,
+            load_session,
+            audio_preferences,
+            audio_status,
+            list_audio_devices,
+            start_audio,
+            stop_audio,
+            note_on,
+            note_off,
+            all_notes_off,
+            start_recording,
+            stop_recording,
+            play_last_recording,
+            stop_playback,
+            export_last_recording
+        ])
+        .run(tauri::generate_context!())
+        .expect("Deep Music Producer native runtime failed");
+}
