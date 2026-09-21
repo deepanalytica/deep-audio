@@ -1,0 +1,215 @@
+{
+  "schemaVersion": "1.0.0",
+  "assets": [
+    {
+      "id": "practice_room_001",
+      "name": "Practice Room 001",
+      "category": "room",
+      "version": "2.0.0",
+      "source": "Deep Music Producer original",
+      "license": "proprietary-original",
+      "blenderSource": "assets/blender/practice/practice_room_001.blend",
+      "glb": "models/practice/room/practice_room_001.glb",
+      "triangles": 146516,
+      "materials": 12,
+      "textures": [],
+      "interactiveNodes": [
+        "drum_kit",
+        "bass_stack",
+        "guitar_combo",
+        "practice_keys",
+        "session_bass",
+        "electric_guitar"
+      ],
+      "notes": "Blender Premium V7. Real-scale rehearsal room with refined drum hardware, hi-hat/pedals/throne, guitar/bass hardware, amplifier control surfaces, premium keybed, vocal stands, pedalboard, acoustic side treatment and cinematic practical lighting."
+    },
+    {
+      "id": "recording_room_001",
+      "name": "Recording Room 001",
+      "category": "room",
+      "version": "2.0.0",
+      "source": "Deep Music Producer original",
+      "license": "proprietary-original",
+      "blenderSource": "assets/blender/recording/recording_room_001.blend",
+      "glb": "models/recording/room/recording_room_001.glb",
+      "triangles": 87924,
+      "materials": 13,
+      "textures": [],
+      "interactiveNodes": [
+        "vocal_mic_body",
+        "vocal_booth_glass",
+        "recording_front_end",
+        "drum_kick",
+        "tracking_amp"
+      ],
+      "notes": "Blender Premium V7. Tracking room with detailed drum hardware, large-diaphragm vocal chain, booth architecture, overhead/room microphones, front-end rack metering, patchbay and controlled capture lighting."
+    },
+    {
+      "id": "production_room_001",
+      "name": "Production Room 001",
+      "category": "room",
+      "version": "2.0.0",
+      "source": "Deep Music Producer original",
+      "license": "proprietary-original",
+      "blenderSource": "assets/blender/production/production_room_001.blend",
+      "glb": "models/production/room/production_room_001.glb",
+      "triangles": 123668,
+      "materials": 12,
+      "textures": [],
+      "interactiveNodes": [
+        "studio_keyboard",
+        "synth_rack_left",
+        "synth_rack_right",
+        "pad_controller",
+        "texture_fx_rack"
+      ],
+      "notes": "Blender Premium V7. Production room with corrected hero keyboard proportions and 2/3 black-key grouping, modular synth towers, macro faders, groovebox, monitor stands, session display, acoustic architecture and dual-color product lighting."
+    },
+    {
+      "id": "mix_room_001",
+      "name": "Mix Room 001",
+      "category": "room",
+      "version": "2.0.0",
+      "source": "Deep Music Producer original",
+      "license": "proprietary-original",
+      "blenderSource": "assets/blender/mix/mix_room_001.blend",
+      "glb": "models/mix/room/mix_room_001.glb",
+      "triangles": 234860,
+      "materials": 13,
+      "textures": [],
+      "interactiveNodes": [
+        "mix_console",
+        "mix_monitor_left",
+        "mix_monitor_right",
+        "mix_dynamics_rack",
+        "mix_spatial_fx_rack",
+        "mix_meter_bridge"
+      ],
+      "notes": "Blender Premium V7. Mix control room with high-density console microcontrols, fader scales, nearfield plus main monitoring, detailed outboard racks, metering, reference display, operator position and symmetric cinematic lighting."
+    },
+    {
+      "id": "mastering_room_001",
+      "name": "Mastering Room 001",
+      "category": "room",
+      "version": "1.0.0",
+      "source": "Deep Music Producer original",
+      "license": "proprietary-original",
+      "blenderSource": "assets/blender/mastering/mastering_room_001.blend",
+      "glb": "models/mastering/room/mastering_room_001.glb",
+      "triangles": 148880,
+      "materials": 17,
+      "textures": [],
+      "interactiveNodes": [
+        "room_shell",
+        "wood_floor",
+        "front_acoustic_wall",
+        "rear_diffusion",
+        "left_acoustic_treatment",
+        "right_acoustic_treatment",
+        "bass_traps",
+        "ceiling_cloud",
+        "studio_door",
+        "lighting_practicals",
+        "operator_position"
+      ],
+      "notes": "Blender Premium V7 mastering benchmark. 8 x 10 x 3.4 m real-scale room with 704 validated meshes, console tick/fader detail, monitor waveguides, rack handles, meter bridge detail, architectural timber fins, low cove lighting, macro cameras and no unapplied transforms."
+    },
+    {
+      "id": "mastering_console_001",
+      "name": "Deep Reference Mastering Console",
+      "category": "console",
+      "version": "0.1.0",
+      "source": "Deep Music Producer original",
+      "license": "proprietary-original",
+      "blenderSource": "assets/blender/mastering/mastering_room_001.blend",
+      "glb": "models/mastering/console/mastering_console_001.glb",
+      "triangles": 0,
+      "materials": 0,
+      "textures": [],
+      "interactiveNodes": [
+        "master_console",
+        "master_console_tone_section",
+        "master_console_eq_section",
+        "master_console_dynamics_section",
+        "master_console_width_section",
+        "master_console_limiter_section",
+        "master_console_reference_section"
+      ],
+      "notes": "Original hero design is embedded in mastering_room_001.glb for this vertical slice. A split console export remains a later optimization."
+    },
+    {
+      "id": "mastering_monitor_001",
+      "name": "Deep Reference Main Monitor",
+      "category": "monitors",
+      "version": "0.1.0",
+      "source": "Deep Music Producer original",
+      "license": "proprietary-original",
+      "blenderSource": "assets/blender/mastering/mastering_room_001.blend",
+      "glb": "models/mastering/monitors/mastering_monitor_001.glb",
+      "triangles": 0,
+      "materials": 0,
+      "textures": [],
+      "interactiveNodes": [
+        "main_monitor_left",
+        "main_monitor_left_woofer",
+        "main_monitor_left_tweeter",
+        "main_monitor_right",
+        "main_monitor_right_woofer",
+        "main_monitor_right_tweeter"
+      ],
+      "notes": "Shared original left/right design is embedded in mastering_room_001.glb; side semantics remain in React."
+    },
+    {
+      "id": "mastering_rack_eq_001",
+      "name": "Deep Precision EQ Rack",
+      "category": "racks",
+      "version": "0.1.0",
+      "source": "Deep Music Producer original",
+      "license": "proprietary-original",
+      "blenderSource": "assets/blender/mastering/mastering_room_001.blend",
+      "glb": "models/mastering/racks/mastering_rack_eq_001.glb",
+      "triangles": 0,
+      "materials": 0,
+      "textures": [],
+      "interactiveNodes": [
+        "eq_rack"
+      ],
+      "notes": "Original EQ rack is embedded in mastering_room_001.glb; a split export remains optional."
+    },
+    {
+      "id": "mastering_rack_dynamics_001",
+      "name": "Deep Dynamics and Limiter Rack",
+      "category": "racks",
+      "version": "0.1.0",
+      "source": "Deep Music Producer original",
+      "license": "proprietary-original",
+      "blenderSource": "assets/blender/mastering/mastering_room_001.blend",
+      "glb": "models/mastering/racks/mastering_rack_dynamics_001.glb",
+      "triangles": 0,
+      "materials": 0,
+      "textures": [],
+      "interactiveNodes": [
+        "dynamics_rack",
+        "limiter_metering_rack"
+      ],
+      "notes": "Original dynamics/limiter rack is embedded in mastering_room_001.glb; a split export remains optional."
+    },
+    {
+      "id": "mastering_chair_001",
+      "name": "Deep Listening Chair",
+      "category": "furniture",
+      "version": "0.1.0",
+      "source": "Deep Music Producer original",
+      "license": "proprietary-original",
+      "blenderSource": "assets/blender/mastering/mastering_room_001.blend",
+      "glb": "models/mastering/furniture/mastering_chair_001.glb",
+      "triangles": 0,
+      "materials": 0,
+      "textures": [],
+      "interactiveNodes": [
+        "listening_chair"
+      ],
+      "notes": "Original listening chair is embedded in mastering_room_001.glb; a split export remains optional."
+    }
+  ]
+}
