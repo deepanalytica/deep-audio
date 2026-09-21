@@ -67,7 +67,7 @@ impl AudioProcessor for DeepGain{
     fn reset(&mut self){self.smoother.reset(db_to_gain(self.gain_db.get()));}
     fn process(&mut self,block:&mut AudioBlockMut<'_>,_:ProcessContext){
         self.smoother.set_target(db_to_gain(self.gain_db.get()),self.sample_rate,GAIN_SPEC.smoothing_ms);
-        for sample in block.samples_mut(){*sample*=self.smoother.next();}
+        for sample in block.samples_mut(){*sample*=self.smoother.next_value();}
     }
 }
 
@@ -139,8 +139,8 @@ impl DeepGlue{
     }
     #[inline] fn gain_reduction_db(&mut self,detector:f32)->f32{
         let level_db=gain_to_db(self.detector(detector));
-        let threshold=self.threshold.next();
-        let ratio=self.ratio.next().max(1.0);
+        let threshold=self.threshold.next_value();
+        let ratio=self.ratio.next_value().max(1.0);
         let over=level_db-threshold;
         if over>0.0 {-(over-over/ratio)} else {0.0}
     }
@@ -159,8 +159,8 @@ impl DeepGlue{
     pub fn process_stereo_pair(&mut self,left:&mut f32,right:&mut f32){
         let dry_l=*left; let dry_r=*right;
         let gr=self.gain_reduction_db(dry_l.abs().max(dry_r.abs()));
-        let wet_gain=db_to_gain(gr+self.makeup.next());
-        let mix=self.mix.next().clamp(0.0,1.0);
+        let wet_gain=db_to_gain(gr+self.makeup.next_value());
+        let mix=self.mix.next_value().clamp(0.0,1.0);
         *left=dry_l+(dry_l*wet_gain-dry_l)*mix;
         *right=dry_r+(dry_r*wet_gain-dry_r)*mix;
         self.meter_accumulator.observe(*left,gr);
@@ -187,8 +187,8 @@ impl AudioProcessor for DeepGlue{
             for sample in block.samples_mut(){
                 let dry=*sample;
                 let gr=self.gain_reduction_db(dry.abs());
-                let wet_gain=db_to_gain(gr+self.makeup.next());
-                let mix=self.mix.next().clamp(0.0,1.0);
+                let wet_gain=db_to_gain(gr+self.makeup.next_value());
+                let mix=self.mix.next_value().clamp(0.0,1.0);
                 *sample=dry+(dry*wet_gain-dry)*mix;
                 self.meter_accumulator.observe(*sample,gr);
             }
