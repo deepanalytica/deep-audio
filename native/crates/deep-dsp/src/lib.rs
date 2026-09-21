@@ -15,6 +15,10 @@ pub mod ids {
     pub const GLUE_RELEASE_MS: ParameterId = ParameterId(2_004);
     pub const GLUE_MAKEUP_DB: ParameterId = ParameterId(2_005);
     pub const GLUE_MIX_PERCENT: ParameterId = ParameterId(2_006);
+
+    pub const MASTER_INPUT_DB: ParameterId = ParameterId(7_001);
+    pub const MASTER_CEILING_DB: ParameterId = ParameterId(7_002);
+    pub const MASTER_DRIVE_PERCENT: ParameterId = ParameterId(7_003);
 }
 
 pub const GAIN_SPEC: ParameterSpec = ParameterSpec {
@@ -29,6 +33,12 @@ pub const GLUE_SPECS: [ParameterSpec; 6] = [
     ParameterSpec { id:ids::GLUE_RELEASE_MS,key:"deep_glue.release_ms",name:"Release",unit:"ms",min:10.0,max:1500.0,default:120.0,smoothing_ms:0.0 },
     ParameterSpec { id:ids::GLUE_MAKEUP_DB,key:"deep_glue.makeup_db",name:"Makeup",unit:"dB",min:-12.0,max:24.0,default:0.0,smoothing_ms:15.0 },
     ParameterSpec { id:ids::GLUE_MIX_PERCENT,key:"deep_glue.mix_percent",name:"Mix",unit:"%",min:0.0,max:100.0,default:100.0,smoothing_ms:15.0 },
+];
+
+pub const MASTER_SPECS: [ParameterSpec; 3] = [
+    ParameterSpec { id:ids::MASTER_INPUT_DB,key:"deep_master.input_db",name:"Input",unit:"dB",min:-12.0,max:12.0,default:0.0,smoothing_ms:20.0 },
+    ParameterSpec { id:ids::MASTER_CEILING_DB,key:"deep_master.ceiling_db",name:"Ceiling",unit:"dBTP",min:-3.0,max:0.0,default:-1.0,smoothing_ms:20.0 },
+    ParameterSpec { id:ids::MASTER_DRIVE_PERCENT,key:"deep_master.drive_percent",name:"Drive",unit:"%",min:0.0,max:100.0,default:0.0,smoothing_ms:20.0 },
 ];
 
 pub struct AudioBlockMut<'a> { samples:&'a mut [f32], channels:usize }
@@ -204,6 +214,142 @@ impl AudioProcessor for DeepGlue{
     }
 }
 
+#[derive(Clone)]
+pub struct DeepMasterHandles {
+    pub input_db: ParameterHandle,
+    pub ceiling_db: ParameterHandle,
+    pub drive_percent: ParameterHandle,
+}
+
+impl DeepMasterHandles {
+    pub fn register(bank: &mut ParameterBank) -> Self {
+        Self {
+            input_db: bank.register(MASTER_SPECS[0]),
+            ceiling_db: bank.register(MASTER_SPECS[1]),
+            drive_percent: bank.register(MASTER_SPECS[2]),
+        }
+    }
+
+    pub fn by_id(&self, id: ParameterId) -> Option<&ParameterHandle> {
+        match id {
+            ids::MASTER_INPUT_DB => Some(&self.input_db),
+            ids::MASTER_CEILING_DB => Some(&self.ceiling_db),
+            ids::MASTER_DRIVE_PERCENT => Some(&self.drive_percent),
+            _ => None,
+        }
+    }
+}
+
+/// Conservative final safety stage for the native vertical slice.
+///
+/// It is intentionally not marketed as a final mastering limiter: no lookahead
+/// or inter-sample peak reconstruction is claimed yet. It provides smoothed
+/// input gain, controlled soft saturation and a deterministic sample ceiling.
+pub struct DeepMasterStage {
+    handles: DeepMasterHandles,
+    meter: SharedMeter,
+    meter_accumulator: MeterAccumulator,
+    sample_rate: f32,
+    input: LinearSmoother,
+    ceiling: LinearSmoother,
+    drive: LinearSmoother,
+}
+
+impl DeepMasterStage {
+    pub fn new(handles: DeepMasterHandles, meter: SharedMeter) -> Self {
+        Self {
+            input: LinearSmoother::new(db_to_gain(handles.input_db.get())),
+            ceiling: LinearSmoother::new(db_to_gain(handles.ceiling_db.get())),
+            drive: LinearSmoother::new(handles.drive_percent.get() / 100.0),
+            handles,
+            meter,
+            meter_accumulator: MeterAccumulator::default(),
+            sample_rate: 48_000.0,
+        }
+    }
+}
+
+impl AudioProcessor for DeepMasterStage {
+    fn prepare(&mut self, sample_rate: f32, _max_block_frames: usize) {
+        self.sample_rate = sample_rate;
+        self.reset();
+    }
+
+    fn reset(&mut self) {
+        self.input.reset(db_to_gain(self.handles.input_db.get()));
+        self.ceiling.reset(db_to_gain(self.handles.ceiling_db.get()));
+        self.drive.reset(self.handles.drive_percent.get() / 100.0);
+    }
+
+    fn process(&mut self, block: &mut AudioBlockMut<'_>, _context: ProcessContext) {
+        self.input.set_target(
+            db_to_gain(self.handles.input_db.get()),
+            self.sample_rate,
+            MASTER_SPECS[0].smoothing_ms,
+        );
+        self.ceiling.set_target(
+            db_to_gain(self.handles.ceiling_db.get()),
+            self.sample_rate,
+            MASTER_SPECS[1].smoothing_ms,
+        );
+        self.drive.set_target(
+            self.handles.drive_percent.get() / 100.0,
+            self.sample_rate,
+            MASTER_SPECS[2].smoothing_ms,
+        );
+
+        self.meter_accumulator.begin_block();
+        for sample in block.samples_mut() {
+            let input = self.input.next_value();
+            let ceiling = self.ceiling.next_value().max(0.001);
+            let drive = self.drive.next_value().clamp(0.0, 1.0);
+            let dry = *sample * input;
+            let drive_gain = 1.0 + drive * 5.0;
+            let normalization = drive_gain.tanh().max(1.0e-6);
+            let saturated = (dry * drive_gain).tanh() / normalization;
+            let limited = saturated.clamp(-ceiling, ceiling);
+            let reduction_db = if saturated.abs() > ceiling {
+                gain_to_db((limited.abs() / saturated.abs().max(1.0e-12)).max(1.0e-12))
+            } else {
+                0.0
+            };
+            *sample = limited;
+            self.meter_accumulator.observe(limited, reduction_db);
+        }
+        self.meter_accumulator.finish(&self.meter);
+    }
+}
+
+/// Shared standalone signal path. The app and future render/export workers use
+/// this exact chain rather than duplicating DSP in UI code.
+pub struct DeepStudioChain {
+    glue: DeepGlue,
+    master: DeepMasterStage,
+}
+
+impl DeepStudioChain {
+    pub fn new(glue: DeepGlue, master: DeepMasterStage) -> Self {
+        Self { glue, master }
+    }
+}
+
+impl AudioProcessor for DeepStudioChain {
+    fn prepare(&mut self, sample_rate: f32, max_block_frames: usize) {
+        self.glue.prepare(sample_rate, max_block_frames);
+        self.master.prepare(sample_rate, max_block_frames);
+    }
+
+    fn reset(&mut self) {
+        self.glue.reset();
+        self.master.reset();
+    }
+
+    fn process(&mut self, block: &mut AudioBlockMut<'_>, context: ProcessContext) {
+        self.glue.process(block, context);
+        self.master.process(block, context);
+    }
+}
+
 #[cfg(test)]
 mod tests{
     use super::*;
@@ -214,6 +360,21 @@ mod tests{
         gain.process(&mut block,ProcessContext{sample_rate:48_000.0});
         assert!(samples.iter().all(|s|s.is_finite())); assert!(samples[511]<0.6);
     }
+    #[test] fn master_stage_enforces_ceiling(){
+        let mut bank=ParameterBank::new();
+        let handles=DeepMasterHandles::register(&mut bank);
+        let meter=SharedMeter::new();
+        let mut master=DeepMasterStage::new(handles,meter);
+        master.prepare(48_000.0,256);
+        bank.set(ids::MASTER_CEILING_DB,-1.0);
+        bank.set(ids::MASTER_INPUT_DB,12.0);
+        let mut samples=[0.95_f32;512];
+        let mut block=AudioBlockMut::new(&mut samples,2).unwrap();
+        master.process(&mut block,ProcessContext{sample_rate:48_000.0});
+        let ceiling=db_to_gain(-1.0);
+        assert!(samples.iter().all(|s|s.is_finite()&&s.abs()<=ceiling+1.0e-4));
+    }
+
     #[test] fn glue_compresses_without_nan(){
         let mut bank=ParameterBank::new(); let handles=DeepGlueHandles::register(&mut bank);
         let meter=SharedMeter::new(); let mut glue=DeepGlue::new(handles,meter.clone());
