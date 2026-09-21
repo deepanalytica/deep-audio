@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-use deep_dsp::DeepGlueHandles;
+use deep_dsp::{DeepGlueHandles,DeepMasterHandles,DeepMasterStage,DeepStudioChain};
 use deep_metering::{MeterSnapshot,SharedMeter};
 use deep_params::{ParameterBank,ParameterId,ParameterSnapshot};
 use deep_playback::{PlaybackController,PlaybackSpec};
@@ -47,7 +47,8 @@ struct AudioService{
 
 struct EngineState{
     params:ParameterBank,
-    handles:DeepGlueHandles,
+    glue_handles:DeepGlueHandles,
+    master_handles:DeepMasterHandles,
     meter:SharedMeter,
     transport:SharedTransport,
     audio:Mutex<Option<AudioService>>,
@@ -58,10 +59,12 @@ struct EngineState{
 impl EngineState{
     fn new()->Self{
         let mut params=ParameterBank::new();
-        let handles=DeepGlueHandles::register(&mut params);
+        let glue_handles=DeepGlueHandles::register(&mut params);
+        let master_handles=DeepMasterHandles::register(&mut params);
         Self{
             params,
-            handles,
+            glue_handles,
+            master_handles,
             meter:SharedMeter::new(),
             transport:SharedTransport::default(),
             audio:Mutex::new(None),
@@ -127,7 +130,8 @@ fn set_parameter(state:tauri::State<'_,EngineState>,id:u32,value:f32)->Result<f3
     let parameter_id=ParameterId(id);
     if !state.params.set(parameter_id,value){return Err(format!("unknown parameter id {id}"));}
     let applied=state.params.get(parameter_id).expect("parameter exists").get();
-    if let Ok(mut session)=state.session.lock(){session.set_parameter("deep_glue",parameter_id,applied);}
+    let device_type=if (7000..8000).contains(&id){"deep_master"}else{"deep_glue"};
+    if let Ok(mut session)=state.session.lock(){session.set_parameter(device_type,parameter_id,applied);}
     Ok(applied)
 }
 
@@ -292,7 +296,8 @@ fn start_audio(
     let mut slot=state.audio.lock().map_err(|_|"audio service lock poisoned".to_string())?;
     if let Some(service)=slot.as_ref(){return Ok(status_from_service(service));}
 
-    let handles=state.handles.clone();
+    let glue_handles=state.glue_handles.clone();
+    let master_handles=state.master_handles.clone();
     let meter=state.meter.clone();
     let transport=state.transport.clone();
     let recorder_capacity=48_000usize*2*8;
@@ -303,7 +308,9 @@ fn start_audio(
     let preference=if prefer_asio{BackendPreference::Asio}else{BackendPreference::Default};
 
     std::thread::Builder::new().name("deep-audio-service".into()).spawn(move||{
-        let processor=DeepGlue::new(handles,meter);
+        let glue=DeepGlue::new(glue_handles,meter.clone());
+        let master=DeepMasterStage::new(master_handles,meter);
+        let processor=DeepStudioChain::new(glue,master);
         match CpalDuplex::start_with_devices(
             processor,
             preference,
