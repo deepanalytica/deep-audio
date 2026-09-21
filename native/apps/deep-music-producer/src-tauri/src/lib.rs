@@ -221,7 +221,12 @@ fn list_audio_devices(_:bool)->Result<Vec<String>,String>{
 
 #[cfg(feature="native-audio")]
 #[tauri::command]
-fn start_audio(state:tauri::State<'_,EngineState>,prefer_asio:bool)->Result<AudioStatus,String>{
+fn start_audio(
+    state:tauri::State<'_,EngineState>,
+    prefer_asio:bool,
+    input_device:Option<String>,
+    output_device:Option<String>,
+)->Result<AudioStatus,String>{
     use deep_audio_io::{BackendPreference,native::CpalDuplex};
     use deep_dsp::DeepGlue;
     use std::time::Duration;
@@ -240,7 +245,14 @@ fn start_audio(state:tauri::State<'_,EngineState>,prefer_asio:bool)->Result<Audi
 
     std::thread::Builder::new().name("deep-audio-service".into()).spawn(move||{
         let processor=DeepGlue::new(handles,meter);
-        match CpalDuplex::start_with_runtime(processor,preference,Some(tap),Some(transport)){
+        match CpalDuplex::start_with_devices(
+            processor,
+            preference,
+            Some(tap),
+            Some(transport),
+            input_device.as_deref(),
+            output_device.as_deref(),
+        ){
             Ok(stream)=>{
                 let _=ready_tx.send(Ok(stream.info().clone()));
                 let _=stop_rx.recv();
@@ -265,7 +277,12 @@ fn start_audio(state:tauri::State<'_,EngineState>,prefer_asio:bool)->Result<Audi
 
 #[cfg(not(feature="native-audio"))]
 #[tauri::command]
-fn start_audio(_:tauri::State<'_,EngineState>,_:bool)->Result<AudioStatus,String>{
+fn start_audio(
+    _:tauri::State<'_,EngineState>,
+    _:bool,
+    _:Option<String>,
+    _:Option<String>,
+)->Result<AudioStatus,String>{
     Err("native audio is disabled in this build; enable feature native-audio".into())
 }
 
