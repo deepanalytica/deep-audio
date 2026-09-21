@@ -4,7 +4,7 @@ import ProjectBrowser from './ProjectBrowser.jsx';
 import { useStudioStore } from '../store.js';
 import { KEYS, MUSICIANS, PROGRESSIONS, ROOMS, ROOM_SOUNDS, SOUNDS } from '../data.js';
 import { audioEngine } from '../audio/engine.js';
-import { exportNativeRecording, isNativeShell, nativeAllNotesOff, nativeAudioStatus, nativeMeter, nativeNoteOff, nativeNoteOn, nativeTransport, NativeParam, playNativeLastRecording, saveNativeSession, setNativeMetronome, setNativeParameter, setNativeRoom, startNativeAudio, startNativeRecording, stopNativePlayback, stopNativeRecording } from '../nativeBridge.js';
+import { exportNativeRecording, isNativeShell, nativeAllNotesOff, nativeAudioStatus, nativeMeter, nativeNoteOff, nativeNoteOn, nativeTransport, nativeTransportSnapshot, NativeParam, playNativeLastRecording, saveNativeSession, setNativeMetronome, setNativeParameter, setNativeRoom, startPreferredNativeAudio, startNativeRecording, stopNativePlayback, stopNativeRecording } from '../nativeBridge.js';
 
 function Brand(){
   return <div className="brand">
@@ -31,7 +31,7 @@ function TopBar(){
   const activateAudio=async()=>{
     if(isNativeShell()){
       try{
-        const status=await startNativeAudio(false);
+        const status=await startPreferredNativeAudio();
         setNativeAudio({connected:true,...status});
       }catch(error){
         console.error('Native audio start failed',error);
@@ -310,6 +310,19 @@ function Transport(){
     return()=>clearInterval(id);
   },[playing]);
 
+  useEffect(()=>{
+    if(!isNativeShell())return undefined;
+    let alive=true;
+    const sync=()=>nativeTransportSnapshot().then((snapshot)=>{
+      if(!alive)return;
+      setPlaying(snapshot.playing);
+      setRecording(snapshot.recording);
+    }).catch(()=>{});
+    sync();
+    const id=setInterval(sync,100);
+    return()=>{alive=false;clearInterval(id);};
+  },[setPlaying,setRecording]);
+
   const format=(ms)=>{
     const m=Math.floor(ms/60000),s=Math.floor(ms%60000/1000),x=Math.floor(ms%1000);
     return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')+'.'+String(x).padStart(3,'0');
@@ -355,7 +368,7 @@ function Transport(){
     if(isNativeShell()){
       try{
         const status=await nativeAudioStatus();
-        if(!status.running)await startNativeAudio(false);
+        if(!status.running)await startPreferredNativeAudio();
         if(recording){
           const summary=await stopNativeRecording();
           setRecording(false);
@@ -430,7 +443,7 @@ function NativeKeysInput(){
       const status=await nativeAudioStatus();
       if(status.running)return status;
       if(!starting.current){
-        starting.current=startNativeAudio(false).finally(()=>{starting.current=null;});
+        starting.current=startPreferredNativeAudio().finally(()=>{starting.current=null;});
       }
       return starting.current;
     };
