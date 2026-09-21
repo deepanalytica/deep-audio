@@ -610,3 +610,6 @@ body{font-family:"Arial Narrow","Roboto Condensed",Inter,ui-sans-serif,system-ui
 @media(max-width:760px){.project-browser{left:10px;right:10px;bottom:84px;width:auto}}
 
 .audio-capability-note{margin:0 0 10px;padding:8px 9px;border-left:2px solid #2f8ee9;background:rgba(27,102,171,.08);color:#6e96b6;font-size:6px;line-height:1.5}.audio-backend button:disabled{opacity:.38;cursor:not-allowed}
+
+.native-keys-hint{position:absolute;z-index:22;left:50%;bottom:246px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:7px 12px;border:1px solid rgba(158,112,211,.32);border-radius:6px;background:rgba(12,8,19,.72);backdrop-filter:blur(14px);box-shadow:0 10px 34px rgba(0,0,0,.28);pointer-events:none}.native-keys-hint b{color:#d6b4f5;font-size:7px;letter-spacing:.15em}.native-keys-hint span{color:#eee5f6;font:600 7px ui-monospace,monospace;letter-spacing:.12em}.native-keys-hint small{color:#876ba2;font-size:5px;letter-spacing:.12em}
+@media(max-height:720px){.native-keys-hint{display:none}}
