@@ -2,15 +2,32 @@ import { useStudioStore } from '../store.js';
 import { PROGRESSIONS, ROOM_SOUNDS } from '../data.js';
 
 const KEY_OFFSETS={C:0,'C#':1,D:2,Eb:3,E:4,F:5,'F#':6,G:7,Ab:8,A:9,Bb:10,B:11};
+const MAX_TRACK_BYTES=500*1024*1024;
+const RECORDING_TYPES=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4'];
+
+function recordingExtension(type=''){
+  if(type.includes('mp4'))return 'm4a';
+  if(type.includes('ogg'))return 'ogg';
+  return 'webm';
+}
+
+function recordingName(extension){
+  const stamp=new Intl.DateTimeFormat('sv-SE',{dateStyle:'short',timeStyle:'medium'}).format(new Date()).replace(/[\s:]/g,'-');
+  return `Toma-${stamp}.${extension}`;
+}
 
 class StudioAudioEngine{
   constructor(){
     this.ctx=null;this.mix=null;this.convolver=null;this.wet=null;this.master=null;this.comp=null;
     this.timer=null;this.nextTime=0;this.step=0;
+    this.backing=null;this.backingSource=null;this.backingUrl=null;
+    this.mediaRecorder=null;this.recordingStream=null;this.recordingChunks=[];this.recordingResult=null;
+    this.recordingUrl=null;
   }
   async init(){
     if(!this.ctx){
       const AC=window.AudioContext||window.webkitAudioContext;
+      if(!AC)throw new Error('Este navegador no ofrece Web Audio. Usa una versión reciente de Chrome, Edge, Firefox o Safari.');
       this.ctx=new AC();
       this.mix=this.ctx.createGain();
       this.convolver=this.ctx.createConvolver();
@@ -44,6 +61,80 @@ class StudioAudioEngine{
     }
     this.convolver.buffer=impulse;
     this.wet.gain.setTargetAtTime(profile.wet,this.ctx.currentTime,.03);
+  }
+  async loadTrack(file){
+    if(!file)throw new Error('No se seleccionó ningún archivo.');
+    if(file.size>MAX_TRACK_BYTES)throw new Error('La pista supera 500 MB. Elige un archivo más liviano.');
+    if(file.type&&!file.type.startsWith('audio/'))throw new Error('El archivo no parece ser audio. Usa WAV, MP3, M4A, FLAC u OGG.');
+    await this.init();
+
+    if(this.backing){
+      this.backing.pause();
+      this.backingSource?.disconnect();
+      if(this.backingUrl)URL.revokeObjectURL(this.backingUrl);
+    }
+
+    const url=URL.createObjectURL(file);
+    const audio=new Audio();
+    audio.preload='metadata';
+    audio.src=url;
+    await new Promise((resolve,reject)=>{
+      const timeout=window.setTimeout(()=>reject(new Error('No pudimos leer la pista a tiempo. Prueba otro formato.')),10000);
+      audio.addEventListener('loadedmetadata',()=>{window.clearTimeout(timeout);resolve();},{once:true});
+      audio.addEventListener('error',()=>{window.clearTimeout(timeout);reject(new Error('El navegador no pudo abrir este formato de audio.'))},{once:true});
+    }).catch((error)=>{URL.revokeObjectURL(url);throw error});
+
+    this.backing=audio;
+    this.backingUrl=url;
+    this.backingSource=this.ctx.createMediaElementSource(audio);
+    this.backingSource.connect(this.mix);
+    audio.addEventListener('ended',()=>{
+      this.pause();
+      useStudioStore.getState().notify('La pista llegó al final.','info');
+    });
+    const track={name:file.name,size:file.size,type:file.type||'audio',duration:Number.isFinite(audio.duration)?audio.duration:0};
+    useStudioStore.getState().setTrack(track);
+    return track;
+  }
+  getPositionMs(){return this.backing?this.backing.currentTime*1000:null}
+  async startRecording(){
+    if(this.mediaRecorder?.state==='recording')return;
+    if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){
+      throw new Error('La grabación de micrófono no está disponible en este navegador.');
+    }
+    const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    const mimeType=RECORDING_TYPES.find((type)=>MediaRecorder.isTypeSupported(type));
+    const recorder=new MediaRecorder(stream,mimeType?{mimeType}:undefined);
+    this.recordingStream=stream;
+    this.mediaRecorder=recorder;
+    this.recordingChunks=[];
+    this.recordingResult=new Promise((resolve,reject)=>{
+      recorder.addEventListener('dataavailable',(event)=>{if(event.data.size)this.recordingChunks.push(event.data)});
+      recorder.addEventListener('error',(event)=>{
+        this.recordingStream?.getTracks().forEach((track)=>track.stop());
+        this.recordingStream=null;this.mediaRecorder=null;this.recordingChunks=[];
+        reject(event.error||new Error('La grabación se interrumpió.'));
+      },{once:true});
+      recorder.addEventListener('stop',()=>{
+        const type=recorder.mimeType||mimeType||'audio/webm';
+        const blob=new Blob(this.recordingChunks,{type});
+        if(this.recordingUrl)URL.revokeObjectURL(this.recordingUrl);
+        this.recordingUrl=URL.createObjectURL(blob);
+        const result={url:this.recordingUrl,name:recordingName(recordingExtension(type)),size:blob.size,type};
+        this.recordingStream?.getTracks().forEach((track)=>track.stop());
+        this.recordingStream=null;this.mediaRecorder=null;this.recordingChunks=[];
+        this.recordingResult=null;
+        useStudioStore.getState().setLastRecording(result);
+        resolve(result);
+      },{once:true});
+    });
+    recorder.start(250);
+  }
+  async stopRecording(){
+    if(!this.mediaRecorder||this.mediaRecorder.state==='inactive')return null;
+    const result=this.recordingResult;
+    this.mediaRecorder.stop();
+    return result;
   }
   frequency(midi){return 440*Math.pow(2,(midi-69)/12)}
   osc(type,midi,time,duration,gain=.06,cutoff=2200,pan=0){
@@ -126,14 +217,20 @@ class StudioAudioEngine{
     await this.init();
     const s=useStudioStore.getState();
     if(s.playing)return;
+    if(this.backing){
+      if(this.backing.ended)this.backing.currentTime=0;
+      await this.backing.play();
+    }
     s.setPlaying(true);this.step=0;this.nextTime=this.ctx.currentTime+.05;
     clearInterval(this.timer);this.timer=setInterval(()=>this.tick(),25);
   }
   pause(){
-    clearInterval(this.timer);this.timer=null;useStudioStore.getState().setPlaying(false);
+    clearInterval(this.timer);this.timer=null;this.backing?.pause();useStudioStore.getState().setPlaying(false);
   }
   stop(){
-    clearInterval(this.timer);this.timer=null;this.step=0;useStudioStore.getState().setPlaying(false);
+    clearInterval(this.timer);this.timer=null;this.step=0;
+    if(this.backing){this.backing.pause();this.backing.currentTime=0}
+    useStudioStore.getState().setPlaying(false);
   }
 }
 
