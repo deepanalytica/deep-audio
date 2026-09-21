@@ -17,10 +17,17 @@ import {
 } from '../hardware/StudioHardware.jsx';
 
 function ConsoleSection({x,accent,variant=0}){
+  const nativeBinding=variant===0
+    ?{id:NativeParam.MASTER_INPUT_DB,min:-12,max:12,defaultValue:0,step:.25}
+    :variant===2
+      ?{id:NativeParam.MASTER_DRIVE_PERCENT,min:0,max:100,defaultValue:0,step:1}
+      :variant===4
+        ?{id:NativeParam.MASTER_CEILING_DB,min:-3,max:0,defaultValue:-1,step:.05}
+        :null;
   return <group position={[x,1.42,-1.13]} rotation={[-.11,0,0]}>
-    <HardwareDisplay position={[0,.045,-.27]} width={.52} height={.18} title={variant===0?'TONE':variant===1?'EQ':variant===2?'DYNAMICS':variant===3?'STEREO':'LIMIT'} value={variant===4?'-0.8':'0.0'} unit={variant===4?'TP':'dB'} accent={accent} mode={variant%2?'curve':'meter'}/>
+    <HardwareDisplay position={[0,.045,-.27]} width={.52} height={.18} title={variant===0?'INPUT':variant===1?'EQ':variant===2?'DRIVE':variant===3?'STEREO':'CEILING'} value={variant===4?'-1.0':'0.0'} unit={variant===4?'dBTP':'dB'} accent={accent} mode={variant%2?'curve':'meter'}/>
     <HardwareKnob position={[-.25,.075,.12]} size={.045} color="#aaa9a4" accent={accent}/>
-    <HardwareKnob position={[0,.075,.12]} size={.052} color={accent} accent="#f0d6a7"/>
+    <HardwareKnob position={[0,.075,.12]} size={.052} color={accent} accent="#f0d6a7" nativeBinding={nativeBinding}/>
     <HardwareKnob position={[.25,.075,.12]} size={.045} color="#aaa9a4" accent={accent}/>
     <HardwareFader position={[.26,.06,.36]} length={.34} value={.35+variant*.1} accent={accent}/>
     <HardwareToggle position={[-.28,.06,.36]} on={variant!==3} accent={accent}/>
