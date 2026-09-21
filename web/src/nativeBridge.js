@@ -29,28 +29,19 @@ export async function nativeHealth(){
   }
 }
 
-export async function nativeParameters(){
-  if(!isNativeShell())return [];
-  return invoke('parameter_snapshot');
-}
-
-export async function setNativeParameter(id,value){
-  if(!isNativeShell())return value;
-  return invoke('set_parameter',{id,value});
-}
-
-export async function nativeMeter(){
-  if(!isNativeShell())return {peak:0,rms:0,gain_reduction_db:0};
-  return invoke('meter_snapshot');
-}
-
-export async function nativeAudioStatus(){
-  if(!isNativeShell())return {running:false,backend:'web'};
-  return invoke('audio_status');
-}
-
-export async function startNativeAudio(preferAsio=false){
-  return invoke('start_audio',{preferAsio});
-}
-
+export async function nativeParameters(){return isNativeShell()?invoke('parameter_snapshot'):[];}
+export async function setNativeParameter(id,value){return isNativeShell()?invoke('set_parameter',{id,value}):value;}
+export async function nativeMeter(){return isNativeShell()?invoke('meter_snapshot'):{peak:0,rms:0,gain_reduction_db:0};}
+export async function nativeAudioStatus(){return isNativeShell()?invoke('audio_status'):{running:false,backend:'web'};}
+export async function nativeTransportSnapshot(){return isNativeShell()?invoke('transport_snapshot'):{playing:false,recording:false,position_samples:0,bpm:120};}
+export async function nativeTransport(action,{bpm=null,positionSamples=null}={}){return invoke('transport_command',{action,bpm,positionSamples});}
+export async function setNativeRoom(room){if(isNativeShell())await invoke('set_room',{room});}
+export async function listNativeAudioDevices(preferAsio=false){return invoke('list_audio_devices',{preferAsio});}
+export async function startNativeAudio(preferAsio=false){return invoke('start_audio',{preferAsio});}
 export async function stopNativeAudio(){return invoke('stop_audio');}
+export async function startNativeRecording(name=null){return invoke('start_recording',{name});}
+export async function stopNativeRecording(){return invoke('stop_recording');}
+export async function exportNativeRecording(name=null){return invoke('export_last_recording',{name});}
+export async function nativeSession(){return invoke('session_snapshot');}
+export async function saveNativeSession(name=null){return invoke('save_session',{name});}
+export async function loadNativeSession(path){return invoke('load_session',{path});}
