@@ -47,6 +47,7 @@ export async function setNativeMetronome(enabled){return invoke('set_metronome',
 export async function setNativeRoom(room){if(isNativeShell())await invoke('set_room',{room});}
 export async function listNativeAudioDevices(preferAsio=false){return invoke('list_audio_devices',{preferAsio});}
 export async function startNativeAudio(preferAsio=false,inputDevice=null,outputDevice=null){return invoke('start_audio',{preferAsio,inputDevice,outputDevice});}
+export async function startPreferredNativeAudio(){const saved=await nativeAudioPreferences();return startNativeAudio(Boolean(saved.prefer_asio),saved.input_device??null,saved.output_device??null);}
 export async function stopNativeAudio(){return invoke('stop_audio');}
 export async function nativeNoteOn(note,velocity=.82){return invoke('note_on',{note,velocity});}
 export async function nativeNoteOff(note){return invoke('note_off',{note});}
