@@ -133,9 +133,26 @@ const DEMO_MASTERING_METRICS=[
 
 function MasteringContext({selected,close}){
   const profile=useStudioStore((s)=>s.masteringProfile);
+  const [liveMeter,setLiveMeter]=useState(null);
   const setProfile=useStudioStore((s)=>s.setMasteringProfile);
   const controls=useStudioStore((s)=>s.masteringControls);
   const setControl=useStudioStore((s)=>s.setMasteringControl);
+  useEffect(()=>{
+    if(!isNativeShell())return undefined;
+    let alive=true;
+    const tick=()=>nativeMeter().then((value)=>{if(alive)setLiveMeter(value)}).catch(()=>{});
+    tick();
+    const id=setInterval(tick,80);
+    return()=>{alive=false;clearInterval(id)};
+  },[]);
+
+  const db=(linear)=>linear>1e-9?20*Math.log10(linear):-120;
+  const metrics=liveMeter?[
+    ['Sample Peak',db(liveMeter.peak).toFixed(1),'dBFS'],
+    ['RMS',db(liveMeter.rms).toFixed(1),'dBFS'],
+    ['Gain Reduction',Number(liveMeter.gain_reduction_db??0).toFixed(1),'dB']
+  ]:DEMO_MASTERING_METRICS;
+
   const advanced=[
     ['tone','Tone','−','+'],
     ['dynamicEq','Dynamic EQ','0','100'],
@@ -150,8 +167,8 @@ function MasteringContext({selected,close}){
     <div className="master-section-label"><span>Starting point</span><small>REVERSIBLE</small></div>
     <div className="master-profiles">{MASTERING_PROFILES.map((name)=><button key={name} className={profile===name?'active':''} onClick={()=>setProfile(name)}>{name}</button>)}</div>
     <div className="master-chain" aria-label="Mastering signal chain">{MASTERING_CHAIN.map((item,index)=><span key={item} className={index<6?'enabled':''}>{item}</span>)}</div>
-    <div className="master-section-label"><span>Metering</span><small className="demo-badge">DEMO · NO LIVE ANALYSER</small></div>
-    <div className="master-meters">{DEMO_MASTERING_METRICS.map(([label,value,unit])=><div key={label}><span>{label}</span><b>{value}<small>{unit}</small></b></div>)}</div>
+    <div className="master-section-label"><span>Metering</span><small className="demo-badge">{liveMeter?'LIVE · RUST DSP':'DEMO · NO LIVE ANALYSER'}</small></div>
+    <div className="master-meters">{metrics.map(([label,value,unit])=><div key={label}><span>{label}</span><b>{value}<small>{unit}</small></b></div>)}</div>
     <details className="advanced-controls">
       <summary>Advanced controls <span>Open only when precision matters</span></summary>
       <div>{advanced.map(([id,label,minLabel,maxLabel])=>{
