@@ -7,7 +7,7 @@ use deep_playback::{PlaybackController,PlaybackSpec};
 use deep_record::{RecorderController,RecordingSpec,RecordingSummary};
 use deep_session::{ClipState,ExportState,RoomId,Session,CURRENT_SCHEMA_VERSION};
 use deep_transport::{SharedTransport,TransportSnapshot as RtTransportSnapshot};
-use serde::Serialize;
+use serde::{Deserialize,Serialize};
 use std::path::{Path,PathBuf};
 use std::sync::Mutex;
 use std::time::{SystemTime,UNIX_EPOCH};
@@ -35,6 +35,13 @@ struct AudioStatus{
     sample_rate:Option<u32>,
     input_channels:Option<u16>,
     output_channels:Option<u16>,
+    input_device:Option<String>,
+    output_device:Option<String>,
+}
+
+#[derive(Serialize,Deserialize,Clone,Default)]
+struct AudioPreferences{
+    prefer_asio:bool,
     input_device:Option<String>,
     output_device:Option<String>,
 }
@@ -94,6 +101,28 @@ fn home_dir()->PathBuf{
 
 fn product_root()->PathBuf{
     home_dir().join("Music").join("Deep Music Producer")
+}
+
+fn audio_preferences_path()->PathBuf{
+    product_root().join("Config").join("audio.json")
+}
+
+fn read_audio_preferences()->AudioPreferences{
+    let path=audio_preferences_path();
+    std::fs::read_to_string(path)
+        .ok()
+        .and_then(|raw|serde_json::from_str::<AudioPreferences>(&raw).ok())
+        .unwrap_or_default()
+}
+
+fn write_audio_preferences(preferences:&AudioPreferences)->Result<(),String>{
+    let path=audio_preferences_path();
+    if let Some(parent)=path.parent(){std::fs::create_dir_all(parent).map_err(|e|e.to_string())?;}
+    let json=serde_json::to_string_pretty(preferences).map_err(|e|e.to_string())?;
+    let temporary=path.with_extension("json.tmp");
+    std::fs::write(&temporary,json).map_err(|e|e.to_string())?;
+    if path.exists(){std::fs::remove_file(&path).map_err(|e|e.to_string())?;}
+    std::fs::rename(temporary,path).map_err(|e|e.to_string())
 }
 
 fn sanitized_name(value:&str)->String{
@@ -274,6 +303,9 @@ fn load_session(state:tauri::State<'_,EngineState>,path:String)->Result<Session,
 }
 
 #[tauri::command]
+fn audio_preferences()->AudioPreferences{read_audio_preferences()}
+
+#[tauri::command]
 fn audio_status(state:tauri::State<'_,EngineState>)->AudioStatus{
     state.audio.lock().ok().and_then(|slot|slot.as_ref().map(status_from_service)).unwrap_or(AudioStatus{
         running:false,backend:"native".into(),sample_rate:None,input_channels:None,output_channels:None,input_device:None,output_device:None
@@ -350,6 +382,11 @@ fn start_audio(
             let backend=if prefer_asio{"asio".into()}else{"default".into()};
             let service=AudioService{stop:stop_tx,recorder,playback,info,backend};
             let status=status_from_service(&service);
+            let _=write_audio_preferences(&AudioPreferences{
+                prefer_asio,
+                input_device:status.input_device.clone(),
+                output_device:status.output_device.clone(),
+            });
             *slot=Some(service);
             *state.keys_control.lock().map_err(|_|"keys control lock poisoned".to_string())?=Some(keys_controller);
             Ok(status)
@@ -510,6 +547,7 @@ pub fn run(){
             save_session,
             list_sessions,
             load_session,
+            audio_preferences,
             audio_status,
             list_audio_devices,
             start_audio,
