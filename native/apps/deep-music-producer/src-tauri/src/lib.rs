@@ -160,6 +160,12 @@ fn transport_command(
 }
 
 #[tauri::command]
+fn set_metronome(state:tauri::State<'_,EngineState>,enabled:bool)->RtTransportSnapshot{
+    state.transport.set_metronome(enabled);
+    state.transport.snapshot()
+}
+
+#[tauri::command]
 fn set_room(state:tauri::State<'_,EngineState>,room:String)->Result<(),String>{
     let room=RoomId::parse(&room).ok_or_else(||format!("unknown room {room}"))?;
     let mut session=state.session.lock().map_err(|_|"session lock poisoned".to_string())?;
@@ -449,6 +455,7 @@ pub fn run(){
             meter_snapshot,
             transport_snapshot,
             transport_command,
+            set_metronome,
             set_room,
             session_snapshot,
             save_session,
