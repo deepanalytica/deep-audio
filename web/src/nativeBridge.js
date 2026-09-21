@@ -41,6 +41,8 @@ export async function startNativeAudio(preferAsio=false,inputDevice=null,outputD
 export async function stopNativeAudio(){return invoke('stop_audio');}
 export async function startNativeRecording(name=null){return invoke('start_recording',{name});}
 export async function stopNativeRecording(){return invoke('stop_recording');}
+export async function playNativeLastRecording(){return invoke('play_last_recording');}
+export async function stopNativePlayback(){return invoke('stop_playback');}
 export async function exportNativeRecording(name=null){return invoke('export_last_recording',{name});}
 export async function nativeSession(){return invoke('session_snapshot');}
 export async function saveNativeSession(name=null){return invoke('save_session',{name});}
