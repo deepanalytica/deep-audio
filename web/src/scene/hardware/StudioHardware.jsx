@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
+import { setNativeParameter } from '../../nativeBridge.js';
 import * as THREE from 'three';
 import { RoundedBox } from '@react-three/drei';
 
@@ -46,17 +47,40 @@ export function HardwareLED({position=[0,0,0],color='#67cf94',size=.012,intensit
   </group>;
 }
 
-export function HardwareKnob({position=[0,0,0],size=.045,color='#a9ada9',accent='#e3c48e',vertical=false}){
+export function HardwareKnob({position=[0,0,0],size=.045,color='#a9ada9',accent='#e3c48e',vertical=false,nativeBinding=null}){
   const rot=vertical?[Math.PI/2,0,0]:[0,0,0];
   const ticks=useMemo(()=>Array.from({length:11},(_,i)=>i),[]);
-  return <group position={position} rotation={rot}>
+  const [localValue,setLocalValue]=useState(nativeBinding?.defaultValue??0);
+  const min=nativeBinding?.min??0,max=nativeBinding?.max??1;
+  const normalized=nativeBinding?Math.max(0,Math.min(1,(localValue-min)/Math.max(1e-9,max-min))):.5;
+  const valueAngle=(-.78+normalized*1.56)*Math.PI;
+  const setBoundValue=(value)=>{
+    if(!nativeBinding)return;
+    const next=Math.max(min,Math.min(max,value));
+    setLocalValue(next);
+    void setNativeParameter(nativeBinding.id,next);
+  };
+  const onWheel=(event)=>{
+    if(!nativeBinding)return;
+    event.stopPropagation();
+    const step=nativeBinding.step??((max-min)/100);
+    setBoundValue(localValue+(event.deltaY<0?step:-step));
+  };
+  const onDoubleClick=(event)=>{
+    if(!nativeBinding)return;
+    event.stopPropagation();
+    setBoundValue(nativeBinding.defaultValue??min);
+  };
+  return <group position={position} rotation={rot} onWheel={onWheel} onDoubleClick={onDoubleClick} userData={nativeBinding?{interactive:true,parameterId:nativeBinding.id}:undefined}>
     {ticks.map(i=>{
       const a=(-.78+i*(1.56/10))*Math.PI;
       return <mesh key={i} position={[Math.sin(a)*size*1.42,size*.03,Math.cos(a)*size*1.42]} rotation={[0,-a,0]}>
         <boxGeometry args={[size*.06,size*.035,size*.25]}/><meshStandardMaterial color="#8e8a80" roughness={.58}/></mesh>
     })}
-    <mesh castShadow><cylinderGeometry args={[size,size*1.04,size*.72,32]}/><meshPhysicalMaterial color={color} metalness={.6} roughness={.29} clearcoat={.12}/></mesh>
-    <mesh position={[0,size*.39,size*.38]}><boxGeometry args={[size*.09,size*.035,size*.66]}/><meshBasicMaterial color={accent}/></mesh>
+    <group rotation={[0,valueAngle,0]}>
+      <mesh castShadow><cylinderGeometry args={[size,size*1.04,size*.72,32]}/><meshPhysicalMaterial color={color} metalness={.6} roughness={.29} clearcoat={.12}/></mesh>
+      <mesh position={[0,size*.39,size*.38]}><boxGeometry args={[size*.09,size*.035,size*.66]}/><meshBasicMaterial color={accent}/></mesh>
+    </group>
   </group>;
 }
 
@@ -118,13 +142,13 @@ export function VUMeter({position=[0,0,0],rotation=[-Math.PI/2,0,0],accent='#d9a
   </group>;
 }
 
-export function RackFaceplate({position=[0,0,0],rotation=[0,0,0],width=1.1,height=.34,accent='#d9a45f',variant=0}){
+export function RackFaceplate({position=[0,0,0],rotation=[0,0,0],width=1.1,height=.34,accent='#d9a45f',variant=0,bindings=[]}){
   return <group position={position} rotation={rotation}>
     <RoundedBox args={[width,height,.055]} radius={.025} smoothness={3} castShadow receiveShadow>
       <meshPhysicalMaterial color={variant%2?'#2c2925':'#202426'} metalness={.46} roughness={.3}/>
     </RoundedBox>
-    <HardwareKnob position={[-width*.28,0,.045]} size={.034} color="#a9aaa5" accent={accent} vertical/>
-    <HardwareKnob position={[-width*.08,0,.045]} size={.038} color={accent} accent="#f1d9ad" vertical/>
+    <HardwareKnob position={[-width*.28,0,.045]} size={.034} color="#a9aaa5" accent={accent} vertical nativeBinding={bindings[0]}/>
+    <HardwareKnob position={[-width*.08,0,.045]} size={.038} color={accent} accent="#f1d9ad" vertical nativeBinding={bindings[1]}/>
     <HardwareToggle position={[width*.12,0,.045]} on={variant%3!==0} accent={accent} verticalSurface/>
     <HardwareLED position={[width*.3,.06,.045]} color="#65c992" size={.01}/>
     <HardwareLED position={[width*.4,.06,.045]} color={variant%2?'#d46f56':'#cba45b'} size={.01}/>
