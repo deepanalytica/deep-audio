@@ -53,3 +53,17 @@ jobs:
           publish_dir: ./web/dist
           force_orphan: true
           commit_message: "Publish Deep Music Producer web demo from ${{ github.sha }}"
+
+      - name: Verify public demo
+        shell: bash
+        run: |
+          url="https://deepanalytica.github.io/deep-audio/"
+          for attempt in {1..18}; do
+            if body="$(curl -fsSL --max-time 15 "$url" 2>/dev/null)" && grep -q "Deep Music Producer" <<<"$body"; then
+              echo "Public demo verified: $url"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Public demo did not become reachable at $url"
+          exit 1
