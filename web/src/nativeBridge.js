@@ -46,4 +46,5 @@ export async function stopNativePlayback(){return invoke('stop_playback');}
 export async function exportNativeRecording(name=null){return invoke('export_last_recording',{name});}
 export async function nativeSession(){return invoke('session_snapshot');}
 export async function saveNativeSession(name=null){return invoke('save_session',{name});}
+export async function listNativeSessions(){return invoke('list_sessions');}
 export async function loadNativeSession(path){return invoke('load_session',{path});}
