@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import AudioSetup from './AudioSetup.jsx';
+import ProjectBrowser from './ProjectBrowser.jsx';
 import { useStudioStore } from '../store.js';
 import { KEYS, MUSICIANS, PROGRESSIONS, ROOMS, ROOM_SOUNDS, SOUNDS } from '../data.js';
 import { audioEngine } from '../audio/engine.js';
@@ -258,6 +259,7 @@ function Transport(){
   const openDrawer=useStudioStore((s)=>s.openDrawer);
   const [elapsed,setElapsed]=useState(0);
   const [nativeMessage,setNativeMessage]=useState('');
+  const [projectsOpen,setProjectsOpen]=useState(false);
   const started=React.useRef(0),base=React.useRef(0);
 
   useEffect(()=>{
@@ -357,11 +359,13 @@ function Transport(){
   return <footer className="transport">
     <div className="transport-left">
       <button className="track-button" onClick={()=>openDrawer('sounds')}>＋ Pista</button>
+      {isNativeShell()&&<button className="track-button" onClick={()=>setProjectsOpen(true)}>Proyectos</button>}
       <button className="track-button" onClick={saveProject}>Guardar</button>
       <div className="counter"><b>{format(elapsed)}</b><small>{nativeMessage||(recording?'GRABANDO':playing?'PLAY':'LISTO')}</small></div>
     </div>
     <div className="transport-center"><button className="circle small" onClick={stop}>■</button><button className="circle play" onClick={togglePlay}>{playing?'❚❚':'▶'}</button><button className={'rec '+(recording?'active':'')} onClick={toggleRec}><i/> REC</button></div>
     <div className="transport-right"><label>BPM<input type="number" value={bpm} min="40" max="240" onChange={(e)=>changeBpm(e.target.value)}/></label><button className={'metro '+(metronome?'active':'')} onClick={()=>setMetronome(!metronome)}>Metrónomo</button><button className="track-button" onClick={exportTake}>Exportar WAV</button><div className={'meter '+(playing?'live':'')}><i/></div></div>
+    <ProjectBrowser open={projectsOpen} onClose={()=>setProjectsOpen(false)}/>
   </footer>;
 }
 
