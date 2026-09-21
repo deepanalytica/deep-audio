@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { setNativeParameter } from '../../nativeBridge.js';
 import * as THREE from 'three';
 import { RoundedBox } from '@react-three/drei';
@@ -51,27 +51,70 @@ export function HardwareKnob({position=[0,0,0],size=.045,color='#a9ada9',accent=
   const rot=vertical?[Math.PI/2,0,0]:[0,0,0];
   const ticks=useMemo(()=>Array.from({length:11},(_,i)=>i),[]);
   const [localValue,setLocalValue]=useState(nativeBinding?.defaultValue??0);
+  const drag=useRef(null);
   const min=nativeBinding?.min??0,max=nativeBinding?.max??1;
   const normalized=nativeBinding?Math.max(0,Math.min(1,(localValue-min)/Math.max(1e-9,max-min))):.5;
   const valueAngle=(-.78+normalized*1.56)*Math.PI;
+
   const setBoundValue=(value)=>{
     if(!nativeBinding)return;
     const next=Math.max(min,Math.min(max,value));
     setLocalValue(next);
     void setNativeParameter(nativeBinding.id,next);
   };
+
+  const pointerY=(event)=>event?.nativeEvent?.clientY??event?.clientY??0;
+
+  const onPointerDown=(event)=>{
+    if(!nativeBinding)return;
+    event.stopPropagation();
+    drag.current={y:pointerY(event),value:localValue};
+    event.target?.setPointerCapture?.(event.pointerId);
+    document.body.style.cursor='ns-resize';
+  };
+
+  const onPointerMove=(event)=>{
+    if(!nativeBinding||!drag.current)return;
+    event.stopPropagation();
+    const range=max-min;
+    const sensitivity=nativeBinding.dragSensitivity??0.0045;
+    const delta=(drag.current.y-pointerY(event))*range*sensitivity;
+    setBoundValue(drag.current.value+delta);
+  };
+
+  const endDrag=(event)=>{
+    if(!drag.current)return;
+    event?.stopPropagation?.();
+    event?.target?.releasePointerCapture?.(event.pointerId);
+    drag.current=null;
+    document.body.style.cursor='';
+  };
+
   const onWheel=(event)=>{
     if(!nativeBinding)return;
     event.stopPropagation();
     const step=nativeBinding.step??((max-min)/100);
     setBoundValue(localValue+(event.deltaY<0?step:-step));
   };
+
   const onDoubleClick=(event)=>{
     if(!nativeBinding)return;
     event.stopPropagation();
     setBoundValue(nativeBinding.defaultValue??min);
   };
-  return <group position={position} rotation={rot} onWheel={onWheel} onDoubleClick={onDoubleClick} userData={nativeBinding?{interactive:true,parameterId:nativeBinding.id}:undefined}>
+
+  return <group
+    position={position}
+    rotation={rot}
+    onPointerDown={onPointerDown}
+    onPointerMove={onPointerMove}
+    onPointerUp={endDrag}
+    onPointerCancel={endDrag}
+    onPointerOut={(event)=>{if(event.buttons===0)endDrag(event)}}
+    onWheel={onWheel}
+    onDoubleClick={onDoubleClick}
+    userData={nativeBinding?{interactive:true,parameterId:nativeBinding.id}:undefined}
+  >
     {ticks.map(i=>{
       const a=(-.78+i*(1.56/10))*Math.PI;
       return <mesh key={i} position={[Math.sin(a)*size*1.42,size*.03,Math.cos(a)*size*1.42]} rotation={[0,-a,0]}>
