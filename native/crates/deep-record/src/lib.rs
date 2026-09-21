@@ -278,11 +278,35 @@ fn drain_discard(consumer: &mut Consumer<f32>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
     fn inactive_tap_drops_nothing() {
         let (controller, mut tap) = RecorderController::new(16);
         tap.capture(&[0.1; 32]);
         assert_eq!(controller.dropped_samples(), 0);
+    }
+
+    #[test]
+    fn records_float_wav_without_losing_tail() {
+        let stamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let path = std::env::temp_dir().join(format!("deep-record-roundtrip-{}-{stamp}.wav", std::process::id()));
+        let (mut controller, mut tap) = RecorderController::new(4_096);
+
+        controller.start(&path, RecordingSpec { sample_rate: 48_000, channels: 2 }).unwrap();
+        tap.capture(&[0.1_f32, -0.1, 0.2, -0.2]);
+        let summary = controller.stop().unwrap();
+
+        assert_eq!(summary.frames, 2);
+        assert_eq!(summary.channels, 2);
+        assert_eq!(summary.sample_rate, 48_000);
+        assert_eq!(summary.dropped_samples, 0);
+
+        let mut reader = hound::WavReader::open(&path).unwrap();
+        let samples = reader.samples::<f32>().collect::<Result<Vec<_>, _>>().unwrap();
+        assert_eq!(samples, vec![0.1, -0.1, 0.2, -0.2]);
+
+        controller.shutdown();
+        let _ = std::fs::remove_file(path);
     }
 }
