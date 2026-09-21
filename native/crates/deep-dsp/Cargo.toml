@@ -8,3 +8,4 @@ license.workspace = true
 [dependencies]
 deep-params = { path = "../deep-params" }
 deep-metering = { path = "../deep-metering" }
+deep-rt = { path = "../deep-rt" }
