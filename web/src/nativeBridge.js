@@ -39,6 +39,7 @@ export async function nativeHealth(){
 export async function nativeParameters(){return isNativeShell()?invoke('parameter_snapshot'):[];}
 export async function setNativeParameter(id,value){return isNativeShell()?invoke('set_parameter',{id,value}):value;}
 export async function nativeMeter(){return isNativeShell()?invoke('meter_snapshot'):{peak:0,rms:0,gain_reduction_db:0};}
+export async function nativeAudioPreferences(){return isNativeShell()?invoke('audio_preferences'):{prefer_asio:false,input_device:null,output_device:null};}
 export async function nativeAudioStatus(){return isNativeShell()?invoke('audio_status'):{running:false,backend:'web'};}
 export async function nativeTransportSnapshot(){return isNativeShell()?invoke('transport_snapshot'):{playing:false,recording:false,position_samples:0,bpm:120};}
 export async function nativeTransport(action,{bpm=null,positionSamples=null}={}){return invoke('transport_command',{action,bpm,positionSamples});}
