@@ -3,6 +3,7 @@ import {
   isNativeShell,
   listNativeAudioDevices,
   nativeAudioStatus,
+  nativeHealth,
   startNativeAudio,
   stopNativeAudio
 } from '../nativeBridge.js';
@@ -13,6 +14,7 @@ export default function AudioSetup({open,onClose,onStatus}){
   const [input,setInput]=useState('');
   const [output,setOutput]=useState('');
   const [status,setStatus]=useState(null);
+  const [capabilities,setCapabilities]=useState({native_audio_compiled:true,asio_compiled:false});
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
 
@@ -23,6 +25,13 @@ export default function AudioSetup({open,onClose,onStatus}){
     if(!isNativeShell())return;
     setBusy(true);setError('');
     try{
+      const health=await nativeHealth();
+      setCapabilities(health);
+      if(preferAsio&&!health.asio_compiled){
+        setPreferAsio(false);
+        setBusy(false);
+        return;
+      }
       const [nextDevices,nextStatus]=await Promise.all([
         listNativeAudioDevices(preferAsio),
         nativeAudioStatus()
@@ -60,8 +69,9 @@ export default function AudioSetup({open,onClose,onStatus}){
     </div>
     <div className="audio-backend">
       <button className={!preferAsio?'active':''} onClick={()=>setPreferAsio(false)}>WASAPI</button>
-      <button className={preferAsio?'active':''} onClick={()=>setPreferAsio(true)}>ASIO</button>
+      <button className={preferAsio?'active':''} disabled={!capabilities.asio_compiled} onClick={()=>setPreferAsio(true)}>{capabilities.asio_compiled?'ASIO':'ASIO · SDK'}</button>
     </div>
+    {!capabilities.asio_compiled&&<p className="audio-capability-note">WASAPI está incluido en este build. ASIO queda habilitado únicamente en builds con el SDK de Steinberg configurado.</p>}
     <label>Entrada<select value={input} onChange={(event)=>setInput(event.target.value)} disabled={busy}>
       {inputs.map((device)=><option key={'in-'+device.name} value={device.name}>{device.name}{device.default_input?' · default':''}</option>)}
     </select></label>
