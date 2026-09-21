@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useStudioStore } from '../store.js';
 import { KEYS, MUSICIANS, PROGRESSIONS, ROOMS, ROOM_SOUNDS, SOUNDS } from '../data.js';
 import { audioEngine } from '../audio/engine.js';
-import { isNativeShell, nativeAudioStatus, nativeMeter, startNativeAudio } from '../nativeBridge.js';
+import { exportNativeRecording, isNativeShell, nativeAudioStatus, nativeMeter, nativeTransport, saveNativeSession, setNativeRoom, startNativeAudio, startNativeRecording, stopNativeRecording } from '../nativeBridge.js';
 
 function Brand(){
   return <div className="brand">
@@ -247,11 +247,13 @@ function StudioMap(){
 }
 
 function Transport(){
-  const playing=useStudioStore((s)=>s.playing),recording=useStudioStore((s)=>s.recording),setRecording=useStudioStore((s)=>s.setRecording);
+  const playing=useStudioStore((s)=>s.playing),setPlaying=useStudioStore((s)=>s.setPlaying);
+  const recording=useStudioStore((s)=>s.recording),setRecording=useStudioStore((s)=>s.setRecording);
   const metronome=useStudioStore((s)=>s.metronome),setMetronome=useStudioStore((s)=>s.setMetronome);
   const bpm=useStudioStore((s)=>s.bpm),setBpm=useStudioStore((s)=>s.setBpm);
   const openDrawer=useStudioStore((s)=>s.openDrawer);
   const [elapsed,setElapsed]=useState(0);
+  const [nativeMessage,setNativeMessage]=useState('');
   const started=React.useRef(0),base=React.useRef(0);
 
   useEffect(()=>{
@@ -265,20 +267,102 @@ function Transport(){
     const m=Math.floor(ms/60000),s=Math.floor(ms%60000/1000),x=Math.floor(ms%1000);
     return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')+'.'+String(x).padStart(3,'0');
   };
-  const stop=()=>{audioEngine.stop();base.current=0;setElapsed(0);setRecording(false)};
-  const togglePlay=()=>playing?audioEngine.pause():audioEngine.play();
-  const toggleRec=async()=>{await audioEngine.init();setRecording(!recording);if(!playing)audioEngine.play()};
+
+  const stop=async()=>{
+    if(isNativeShell()){
+      try{
+        if(recording)await stopNativeRecording();
+        const snapshot=await nativeTransport('stop');
+        setPlaying(snapshot.playing);
+        setRecording(snapshot.recording);
+      }catch(error){setNativeMessage(String(error));}
+    }else{
+      audioEngine.stop();
+      setRecording(false);
+    }
+    base.current=0;setElapsed(0);
+  };
+
+  const togglePlay=async()=>{
+    if(isNativeShell()){
+      try{
+        const snapshot=await nativeTransport(playing?'pause':'play');
+        setPlaying(snapshot.playing);
+        setRecording(snapshot.recording);
+      }catch(error){setNativeMessage(String(error));}
+      return;
+    }
+    playing?audioEngine.pause():audioEngine.play();
+  };
+
+  const toggleRec=async()=>{
+    if(isNativeShell()){
+      try{
+        const status=await nativeAudioStatus();
+        if(!status.running)await startNativeAudio(false);
+        if(recording){
+          const summary=await stopNativeRecording();
+          setRecording(false);
+          setPlaying(true);
+          setNativeMessage('TAKE · '+summary.frames+' frames');
+        }else{
+          await startNativeRecording('take');
+          setRecording(true);
+          setPlaying(true);
+          setNativeMessage('REC · RUST');
+        }
+      }catch(error){setNativeMessage(String(error));}
+      return;
+    }
+    await audioEngine.init();setRecording(!recording);if(!playing)audioEngine.play();
+  };
+
+  const changeBpm=async(value)=>{
+    const next=Math.max(40,Math.min(240,Number(value)||120));
+    setBpm(next);
+    if(isNativeShell()){
+      try{await nativeTransport('bpm',{bpm:next});}catch(error){setNativeMessage(String(error));}
+    }
+  };
+
+  const saveProject=async()=>{
+    if(!isNativeShell()){setNativeMessage('Disponible en la app nativa');return;}
+    try{
+      const path=await saveNativeSession('Deep Session');
+      setNativeMessage('GUARDADO · '+path.split(/[\\/]/).pop());
+    }catch(error){setNativeMessage(String(error));}
+  };
+
+  const exportTake=async()=>{
+    if(!isNativeShell()){setNativeMessage('Disponible en la app nativa');return;}
+    try{
+      const path=await exportNativeRecording('Deep Music Export');
+      setNativeMessage('EXPORTADO · '+path.split(/[\\/]/).pop());
+    }catch(error){setNativeMessage(String(error));}
+  };
 
   return <footer className="transport">
-    <div className="transport-left"><button className="track-button" onClick={()=>openDrawer('sounds')}>＋ Pista</button><div className="counter"><b>{format(elapsed)}</b><small>{recording?'GRABANDO':playing?'PLAY':'LISTO'}</small></div></div>
+    <div className="transport-left">
+      <button className="track-button" onClick={()=>openDrawer('sounds')}>＋ Pista</button>
+      <button className="track-button" onClick={saveProject}>Guardar</button>
+      <div className="counter"><b>{format(elapsed)}</b><small>{nativeMessage||(recording?'GRABANDO':playing?'PLAY':'LISTO')}</small></div>
+    </div>
     <div className="transport-center"><button className="circle small" onClick={stop}>■</button><button className="circle play" onClick={togglePlay}>{playing?'❚❚':'▶'}</button><button className={'rec '+(recording?'active':'')} onClick={toggleRec}><i/> REC</button></div>
-    <div className="transport-right"><label>BPM<input type="number" value={bpm} min="40" max="240" onChange={(e)=>setBpm(Math.max(40,Math.min(240,Number(e.target.value)||120)))}/></label><button className={'metro '+(metronome?'active':'')} onClick={()=>setMetronome(!metronome)}>Metrónomo</button><div className={'meter '+(playing?'live':'')}><i/></div></div>
+    <div className="transport-right"><label>BPM<input type="number" value={bpm} min="40" max="240" onChange={(e)=>changeBpm(e.target.value)}/></label><button className={'metro '+(metronome?'active':'')} onClick={()=>setMetronome(!metronome)}>Metrónomo</button><button className="track-button" onClick={exportTake}>Exportar WAV</button><div className={'meter '+(playing?'live':'')}><i/></div></div>
   </footer>;
+}
+
+function NativeRoomSync(){
+  const room=useStudioStore((s)=>s.room);
+  useEffect(()=>{
+    if(isNativeShell())setNativeRoom(room).catch(()=>{});
+  },[room]);
+  return null;
 }
 
 export default function Hud(){
   return <div className="hud">
-    <TopBar/><RoomIntro/>
+    <NativeRoomSync/><TopBar/><RoomIntro/>
     <div className="movement-hint"><b>ARRASTRA</b> para mirar · <b>WASD</b> para moverte · <b>CLIC</b> para interactuar</div>
     <QuickActions/><ContextPanel/><Drawer/><StudioMap/><Transport/>
   </div>;
