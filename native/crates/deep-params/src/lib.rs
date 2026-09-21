@@ -91,7 +91,7 @@ impl LinearSmoother {
         let samples=((sample_rate*smoothing_ms.max(0.0))/1000.0).round() as u32;
         if samples <= 1 { self.reset(target); } else { self.remaining=samples; self.step=(target-self.current)/samples as f32; }
     }
-    #[inline] pub fn next(&mut self) -> f32 {
+    #[inline] pub fn next_value(&mut self) -> f32 {
         if self.remaining>0 {
             self.current+=self.step; self.remaining-=1;
             if self.remaining==0 { self.current=self.target; }
@@ -105,5 +105,5 @@ mod tests {
     use super::*;
     const SPEC: ParameterSpec = ParameterSpec { id: ParameterId(42), key:"test", name:"Test", unit:"", min:0.0,max:1.0,default:0.5,smoothing_ms:10.0 };
     #[test] fn clamps() { let h=ParameterHandle::new(SPEC); h.set(3.0); assert_eq!(h.get(),1.0); }
-    #[test] fn smooths() { let mut s=LinearSmoother::new(0.0); s.set_target(1.0,1000.0,10.0); for _ in 0..10 { s.next(); } assert!((s.next()-1.0).abs()<1e-6); }
+    #[test] fn smooths() { let mut s=LinearSmoother::new(0.0); s.set_target(1.0,1000.0,10.0); for _ in 0..10 { s.next_value(); } assert!((s.next_value()-1.0).abs()<1e-6); }
 }
