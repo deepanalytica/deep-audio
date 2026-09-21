@@ -18,6 +18,7 @@ pub enum AudioIoError{
     #[error("stream build error: {0}")]Build(String),
     #[error("stream start error: {0}")]Play(String),
     #[error("device enumeration error: {0}")]Devices(String),
+    #[error("audio device not found: {0}")]DeviceNotFound(String),
 }
 
 #[derive(Debug,Clone,Serialize)]
@@ -88,15 +89,43 @@ impl CpalDuplex{
     }
 
     pub fn start_with_runtime<P>(
+        processor:P,
+        preference:BackendPreference,
+        recorder:Option<RecordingTap>,
+        transport:Option<SharedTransport>,
+    )->Result<Self,AudioIoError>
+    where P:AudioProcessor+'static{
+        Self::start_with_devices(processor,preference,recorder,transport,None,None)
+    }
+
+    pub fn start_with_devices<P>(
         mut processor:P,
         preference:BackendPreference,
         mut recorder:Option<RecordingTap>,
         transport:Option<SharedTransport>,
+        input_name:Option<&str>,
+        output_name:Option<&str>,
     )->Result<Self,AudioIoError>
     where P:AudioProcessor+'static{
         let host=resolve_host(preference)?;
-        let input_device=host.default_input_device().ok_or(AudioIoError::NoInputDevice)?;
-        let output_device=host.default_output_device().ok_or(AudioIoError::NoOutputDevice)?;
+
+        let input_device=if let Some(name)=input_name{
+            host.input_devices()
+                .map_err(|e|AudioIoError::Devices(e.to_string()))?
+                .find(|device|device.name().ok().as_deref()==Some(name))
+                .ok_or_else(||AudioIoError::DeviceNotFound(name.to_string()))?
+        }else{
+            host.default_input_device().ok_or(AudioIoError::NoInputDevice)?
+        };
+
+        let output_device=if let Some(name)=output_name{
+            host.output_devices()
+                .map_err(|e|AudioIoError::Devices(e.to_string()))?
+                .find(|device|device.name().ok().as_deref()==Some(name))
+                .ok_or_else(||AudioIoError::DeviceNotFound(name.to_string()))?
+        }else{
+            host.default_output_device().ok_or(AudioIoError::NoOutputDevice)?
+        };
         let input_supported=input_device.default_input_config().map_err(|e|AudioIoError::Config(e.to_string()))?;
         let output_supported=output_device.default_output_config().map_err(|e|AudioIoError::Config(e.to_string()))?;
         if input_supported.sample_format()!=cpal::SampleFormat::F32||output_supported.sample_format()!=cpal::SampleFormat::F32{return Err(AudioIoError::UnsupportedSampleFormat);}
