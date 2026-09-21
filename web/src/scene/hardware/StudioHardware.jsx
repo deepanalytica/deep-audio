@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { setNativeParameter } from '../../nativeBridge.js';
+import { isNativeShell, nativeNoteOff, nativeNoteOn, setNativeParameter } from '../../nativeBridge.js';
 import * as THREE from 'three';
 import { RoundedBox } from '@react-three/drei';
 
@@ -200,23 +200,75 @@ export function RackFaceplate({position=[0,0,0],rotation=[0,0,0],width=1.1,heigh
   </group>;
 }
 
-export function PianoKeybed({position=[0,0,0],rotation=[0,0,0],octaves=4,width=2.75}){
+export function PianoKeybed({position=[0,0,0],rotation=[0,0,0],octaves=4,width=2.75,baseMidi=48,nativePlayable=false}){
   const whiteCount=octaves*7;
   const keyW=width/whiteCount;
-  const blackPattern=[0,1,0,1,0,0,1,0,1,0,1,0];
-  const blackPositions=[];
-  for(let o=0;o<octaves;o++){
-    const base=o*7;
-    [0,1,3,4,5].forEach(step=>blackPositions.push(base+step+.68));
+  const whiteSemitones=[0,2,4,5,7,9,11];
+  const blackSteps=[
+    {white:0,semitone:1},
+    {white:1,semitone:3},
+    {white:3,semitone:6},
+    {white:4,semitone:8},
+    {white:5,semitone:10}
+  ];
+  const blackKeys=[];
+  for(let octave=0;octave<octaves;octave++){
+    for(const step of blackSteps){
+      blackKeys.push({
+        position:octave*7+step.white+.68,
+        note:baseMidi+octave*12+step.semitone
+      });
+    }
   }
-  return <group position={position} rotation={rotation}>
+
+  const noteDown=(event,note)=>{
+    if(!nativePlayable||!isNativeShell())return;
+    event.stopPropagation();
+    event.target?.setPointerCapture?.(event.pointerId);
+    void nativeNoteOn(note,.84);
+  };
+  const noteUp=(event,note)=>{
+    if(!nativePlayable||!isNativeShell())return;
+    event.stopPropagation();
+    event.target?.releasePointerCapture?.(event.pointerId);
+    void nativeNoteOff(note);
+  };
+
+  return <group position={position} rotation={rotation} userData={nativePlayable?{instrument:'deep_keys',interactive:true}:undefined}>
     <RoundedBox args={[width+.12,.08,.72]} radius={.035} smoothness={3} position={[0,-.045,0]}>
       <meshPhysicalMaterial color="#121313" metalness={.16} roughness={.34}/>
     </RoundedBox>
-    {Array.from({length:whiteCount},(_,i)=><RoundedBox key={'w'+i} args={[keyW*.93,.055,.62]} radius={.008} smoothness={2} position={[-width/2+keyW/2+i*keyW,0,.035]} castShadow>
-      <meshPhysicalMaterial color="#ece8de" roughness={.31} clearcoat={.08}/>
-    </RoundedBox>)}
-    {blackPositions.map((p,i)=><RoundedBox key={'b'+i} args={[keyW*.58,.068,.39]} radius={.007} smoothness={2} position={[-width/2+p*keyW,.038,-.08]} castShadow>
+    {Array.from({length:whiteCount},(_,i)=>{
+      const octave=Math.floor(i/7);
+      const degree=i%7;
+      const note=baseMidi+octave*12+whiteSemitones[degree];
+      return <RoundedBox
+        key={'w'+i}
+        args={[keyW*.93,.055,.62]}
+        radius={.008}
+        smoothness={2}
+        position={[-width/2+keyW/2+i*keyW,0,.035]}
+        castShadow
+        onPointerDown={(event)=>noteDown(event,note)}
+        onPointerUp={(event)=>noteUp(event,note)}
+        onPointerCancel={(event)=>noteUp(event,note)}
+        onPointerOut={(event)=>{if(event.buttons===0)noteUp(event,note)}}
+      >
+        <meshPhysicalMaterial color="#ece8de" roughness={.31} clearcoat={.08}/>
+      </RoundedBox>;
+    })}
+    {blackKeys.map((key,i)=><RoundedBox
+      key={'b'+i}
+      args={[keyW*.58,.068,.39]}
+      radius={.007}
+      smoothness={2}
+      position={[-width/2+key.position*keyW,.038,-.08]}
+      castShadow
+      onPointerDown={(event)=>noteDown(event,key.note)}
+      onPointerUp={(event)=>noteUp(event,key.note)}
+      onPointerCancel={(event)=>noteUp(event,key.note)}
+      onPointerOut={(event)=>{if(event.buttons===0)noteUp(event,key.note)}}
+    >
       <meshPhysicalMaterial color="#171818" roughness={.24} clearcoat={.16}/>
     </RoundedBox>)}
   </group>;
