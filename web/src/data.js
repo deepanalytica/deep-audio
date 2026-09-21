@@ -5,7 +5,7 @@ export const ROOMS = {
     title:'Entra. Escucha. Toca.',
     copy:'Un espacio vivo para tocar antes de configurar. La banda, los amplificadores y el room responden a tus decisiones.',
     accent:'#1888ff', bg:'#070b10',
-    camera:{position:[0,2.55,7.2], target:[0,1.28,-2.65]}
+    camera:{position:[0,2.38,3.86], target:[0,1.24,-2.72]}
   },
   record: {
     number:'02', label:'Grabación', action:'Captura',
@@ -13,15 +13,15 @@ export const ROOMS = {
     title:'Captura la interpretación.',
     copy:'Tracking room, cabina, amplificadores y cadena de señal. La tecnología desaparece detrás de la toma.',
     accent:'#1888ff', bg:'#080b11',
-    camera:{position:[0,2.55,7.2], target:[0,1.28,-2.65]}
+    camera:{position:[0,2.38,4.05], target:[0,1.24,-2.72]}
   },
   production: {
     number:'03', label:'Producción', action:'Construye',
     eyebrow:'SALA 03 · PRODUCCIÓN',
     title:'Construye un mundo sonoro.',
     copy:'Pianos, sintetizadores, ritmo, armonía y arreglos viven dentro de una sala diseñada para explorar.',
-    accent:'#1888ff', bg:'#070a12',
-    camera:{position:[0,2.55,7.2], target:[0,1.28,-2.65]}
+    accent:'#9b78c7', bg:'#08090d',
+    camera:{position:[0,2.28,3.86], target:[0,1.18,-2.72]}
   },
   mix: {
     number:'04', label:'Mezcla', action:'Equilibra',
@@ -29,7 +29,7 @@ export const ROOMS = {
     title:'Siéntate frente a la música.',
     copy:'Control room espacial con consola, monitores, buses, referencias y decisiones auditables.',
     accent:'#1888ff', bg:'#061019',
-    camera:{position:[0,2.55,7.2], target:[0,1.28,-2.65]}
+    camera:{position:[0,2.38,4.08], target:[0,1.24,-2.72]}
   },
   master: {
     number:'05', label:'Master', action:'Termina',

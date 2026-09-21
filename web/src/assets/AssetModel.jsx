@@ -1,6 +1,8 @@
-import React from 'react';
-import { Clone, useGLTF } from '@react-three/drei';
+import React, { useEffect, useMemo } from 'react';
+import { useGLTF } from '@react-three/drei';
 import { getAsset, resolveAssetUrl } from './assetRegistry.js';
+import { directStudioMaterials } from '../visual/materialDirector.js';
+import { useStudioStore } from '../store.js';
 
 export function AssetFallback({ asset, children }) {
   return <group
@@ -11,13 +13,25 @@ export function AssetFallback({ asset, children }) {
   </group>;
 }
 
+function cloneSceneWithMaterials(scene) {
+  const clone = scene.clone(true);
+  directStudioMaterials(clone);
+  return clone;
+}
+
 function LoadedAsset({ asset }) {
   const { scene } = useGLTF(resolveAssetUrl(asset));
-  return <Clone
-    object={scene}
+  const markCriticalAssetReady = useStudioStore((state) => state.markCriticalAssetReady);
+  const directedScene = useMemo(() => cloneSceneWithMaterials(scene), [scene]);
+
+  useEffect(() => {
+    if (asset.category === 'room') markCriticalAssetReady(asset.id, 'glb');
+  }, [asset.category, asset.id, markCriticalAssetReady]);
+
+  return <primitive
+    object={directedScene}
     name={asset.id}
-    castShadow
-    receiveShadow
+    dispose={null}
   />;
 }
 
@@ -33,6 +47,7 @@ class AssetErrorBoundary extends React.Component {
 
   componentDidCatch(error) {
     console.warn(`[AssetModel] Falling back for ${this.props.asset.id}`, error);
+    this.props.onFailure?.();
   }
 
   render() {
@@ -41,17 +56,38 @@ class AssetErrorBoundary extends React.Component {
   }
 }
 
+function UnavailableAsset({ asset, fallbackNode }) {
+  const markCriticalAssetReady = useStudioStore((state) => state.markCriticalAssetReady);
+
+  useEffect(() => {
+    if (asset.category === 'room') markCriticalAssetReady(asset.id, 'procedural-fallback');
+  }, [asset.category, asset.id, markCriticalAssetReady]);
+
+  return fallbackNode;
+}
+
 export default function AssetModel({ assetId, fallback, ...props }) {
   const asset = getAsset(assetId);
+  const markCriticalAssetReady = useStudioStore((state) => state.markCriticalAssetReady);
   const fallbackNode = <AssetFallback asset={asset}>{fallback}</AssetFallback>;
 
+  if (!asset.available) {
+    return <group {...props} name={`${asset.id}_mount`}>
+      <UnavailableAsset asset={asset} fallbackNode={fallbackNode}/>
+    </group>;
+  }
+
   return <group {...props} name={`${asset.id}_mount`}>
-    {!asset.available
-      ? fallbackNode
-      : <AssetErrorBoundary asset={asset} fallback={fallbackNode}>
-          <React.Suspense fallback={fallbackNode}>
-            <LoadedAsset asset={asset}/>
-          </React.Suspense>
-        </AssetErrorBoundary>}
+    <AssetErrorBoundary
+      asset={asset}
+      fallback={fallbackNode}
+      onFailure={() => {
+        if (asset.category === 'room') markCriticalAssetReady(asset.id, 'error-fallback');
+      }}
+    >
+      <React.Suspense fallback={null}>
+        <LoadedAsset asset={asset}/>
+      </React.Suspense>
+    </AssetErrorBoundary>
   </group>;
 }

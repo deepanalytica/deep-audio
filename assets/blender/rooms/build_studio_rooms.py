@@ -8,6 +8,8 @@ background runner; no third-party assets or textures are required.
 from __future__ import annotations
 
 import math
+import os
+import sys
 from pathlib import Path
 
 import bpy
@@ -17,6 +19,8 @@ from mathutils import Vector
 ROOT = Path(__file__).resolve().parents[3]
 WEB_MODELS = ROOT / "web" / "public" / "models"
 BLENDER_ASSETS = ROOT / "assets" / "blender"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from premium_upgrade import apply_premium_upgrade
 
 ROOMS = {
     "practice": {
@@ -512,7 +516,8 @@ def export_room(key, cfg):
     preview_path = source_dir / f"{cfg['id']}_preview.png"
 
     bpy.context.scene.render.filepath = str(preview_path)
-    bpy.ops.render.render(write_still=True)
+    if os.environ.get("DMP_SKIP_PREVIEW") != "1":
+        bpy.ops.render.render(write_still=True)
     bpy.ops.wm.save_as_mainfile(filepath=str(blend_path))
     bpy.ops.export_scene.gltf(
         filepath=str(glb_path),
@@ -537,6 +542,17 @@ def build_room(key, cfg):
         "mix": build_mix,
     }
     builders[key](cfg, mats)
+    apply_premium_upgrade(key, cfg, mats, {
+        "box": box,
+        "cylinder": cylinder,
+        "sphere": sphere,
+        "torus": torus,
+        "cable": cable,
+        "speaker": speaker,
+        "rack": rack,
+        "add_light": add_light,
+        "add_camera": add_camera,
+    })
     lighting_and_cameras(cfg, mats)
     configure_scene(cfg)
     meshes, triangles, material_count, unapplied = apply_modifiers_and_validate()

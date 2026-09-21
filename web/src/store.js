@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export const useStudioStore = create((set) => ({
+export const useStudioStore = create((set,get) => ({
   room:'practice',
   selected:null,
   drawer:null,
@@ -19,6 +19,13 @@ export const useStudioStore = create((set) => ({
   masteringProfile:'Natural',
   masteringControls:{tone:0,dynamicEq:28,compression:18,saturation:8,stereo:100,ceiling:-1},
   activePlayers:[],
+  roomTransition:{active:false,target:null,id:0},
+  startup:{
+    criticalAssetReady:false,
+    criticalAssetId:null,
+    criticalAssetSource:null,
+    firstFrameReady:false
+  },
   presets:{
     drummer:'Neo Soul Dry',
     bassist:'Round Finger',
@@ -26,13 +33,36 @@ export const useStudioStore = create((set) => ({
     keys:'Warm Rhodes',
     synth:'Poly Analog'
   },
-  setRoom:(room)=>set({room,selected:null,drawer:null,mapOpen:false}),
+  setRoom:(room)=>{
+    if(room===get().room||get().roomTransition.target===room)return;
+    const id=(get().roomTransition.id||0)+1;
+    set({roomTransition:{active:true,target:room,id},selected:null,mapOpen:false,drawer:null});
+    window.setTimeout(()=>{
+      if(get().roomTransition.id!==id)return;
+      set({room,selected:null,mapOpen:false});
+    },80);
+    window.setTimeout(()=>{
+      if(get().roomTransition.id!==id)return;
+      set({roomTransition:{active:false,target:null,id}});
+    },360);
+  },
   select:(selected)=>set({selected,drawer:null,mapOpen:false}),
   closeSelected:()=>set({selected:null}),
   openDrawer:(drawer)=>set({drawer,selected:null,mapOpen:false}),
   closeDrawer:()=>set({drawer:null}),
   setMapOpen:(mapOpen)=>set({mapOpen}),
   setAudioReady:(audioReady)=>set({audioReady}),
+  markCriticalAssetReady:(criticalAssetId,criticalAssetSource='glb')=>set((s)=>({
+    startup:{
+      ...s.startup,
+      criticalAssetReady:true,
+      criticalAssetId,
+      criticalAssetSource
+    }
+  })),
+  markFirstFrameReady:()=>set((s)=>({
+    startup:{...s.startup,firstFrameReady:true}
+  })),
   setPlaying:(playing)=>set({playing}),
   setRecording:(recording)=>set({recording}),
   setMetronome:(metronome)=>set({metronome}),

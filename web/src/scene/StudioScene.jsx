@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
-import { CameraControls, ContactShadows, RoundedBox, Sparkles } from '@react-three/drei';
+import { CameraControls, ContactShadows, RoundedBox } from '@react-three/drei';
 import { Bloom, EffectComposer, Noise, Vignette } from '@react-three/postprocessing';
 import { useStudioStore } from '../store.js';
 import { ROOMS } from '../data.js';
@@ -11,6 +11,7 @@ import {
 } from './objects.jsx';
 import MasteringRoom001 from './mastering/MasteringRoom.jsx';
 import ImmersiveRoom from './rooms/ImmersiveRoom.jsx';
+import StudioCinematography from '../visual/StudioCinematography.jsx';
 
 function useReducedMotion(){
   const [reduced,setReduced]=React.useState(()=>typeof window!=='undefined'&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -42,8 +43,8 @@ function CameraRig(){
 
   useEffect(()=>{
     const cfg=selected?.focus||ROOMS[room].camera;
-    controls.current?.setLookAt(...cfg.position,...cfg.target,true);
-  },[room,selected]);
+    controls.current?.setLookAt(...cfg.position,...cfg.target,!reducedMotion);
+  },[room,selected,reducedMotion]);
 
   useFrame((_,dt)=>{
     const c=controls.current;if(!c)return;
@@ -160,10 +161,20 @@ function RoomPlayers({room,players,accent}){
 
 export default function StudioScene(){
   const room=useStudioStore((s)=>s.room);
+  const criticalAssetReady=useStudioStore((s)=>s.startup.criticalAssetReady);
+  const markFirstFrameReady=useStudioStore((s)=>s.markFirstFrameReady);
+  const startupFrameCommitted=useRef(false);
   const players=useStudioStore((s)=>s.activePlayers);
   const compact=useThree((state)=>state.size.width<820);
   const reducedMotion=useReducedMotion();
   const cfg=ROOMS[room];
+  useFrame(()=>{
+    if(criticalAssetReady&&!startupFrameCommitted.current){
+      startupFrameCommitted.current=true;
+      markFirstFrameReady();
+    }
+  });
+
   const fallbacks={
     practice:<><RoomShell accent={cfg.accent} variant={room}/><PracticeRoom accent={cfg.accent}/></>,
     record:<><RoomShell accent={cfg.accent} variant={room}/><RecordRoom accent={cfg.accent}/></>,
@@ -173,17 +184,29 @@ export default function StudioScene(){
 
   return <>
     <color attach="background" args={[cfg.bg]}/>
-    <fog attach="fog" args={[cfg.bg,9,24]}/>
+    <fog attach="fog" args={[cfg.bg,11,30]}/>
+    <StudioCinematography/>
     <CameraRig/>
     {room!=='master'&&<ImmersiveRoom room={room} fallback={fallbacks[room]}/>}
     {room!=='master'&&<RoomPlayers room={room} players={players} accent={cfg.accent}/>}
     {room==='master'&&<MasteringRoom001/>}
-    <ContactShadows position={[0,.035,-2.5]} opacity={.48} scale={room==='master'?9:16} blur={2.4} far={8} resolution={compact?256:512} color="#000000"/>
-    {!reducedMotion&&<Sparkles count={compact?6:room==='production'?24:10} scale={[13,5,12]} size={.7} speed={.1} opacity={.1} color={cfg.accent}/>}
+    <ContactShadows
+      position={[0,.028,-2.5]}
+      opacity={room==='master'?.34:.4}
+      scale={room==='master'?11:18}
+      blur={3.4}
+      far={9}
+      resolution={compact?256:512}
+      color="#000000"
+    />
     <EffectComposer multisampling={compact?0:2}>
-      <Bloom intensity={room==='master'?.2:.38} luminanceThreshold={1.05} luminanceSmoothing={.5}/>
-      {!reducedMotion&&<Noise opacity={.014}/>}
-      <Vignette eskil={false} offset={.14} darkness={.72}/>
+      <Bloom
+        intensity={room==='production'?.2:.14}
+        luminanceThreshold={1.12}
+        luminanceSmoothing={.42}
+      />
+      {!reducedMotion&&<Noise opacity={.006}/>}
+      <Vignette eskil={false} offset={.19} darkness={.48}/>
     </EffectComposer>
   </>;
 }

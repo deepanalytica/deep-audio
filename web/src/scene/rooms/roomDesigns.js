@@ -18,7 +18,7 @@ export const ROOM_DESIGNS = Object.freeze({
     ]
   },
   production: {
-    assetId: 'production_room_001', accent: '#1688ff', warm: '#bd70dc',
+    assetId: 'production_room_001', accent: '#9474c3', warm: '#d0a064',
     hitboxes: [
       { id: 'studio_keyboard', type: 'TECLAS DE INTERPRETACIÓN', title: 'Teclado de estudio', description: 'Piano, síntesis y capas desde la posición central.', actions: ['Grand', 'Eléctrico', 'Analógico', 'Layer'], position: [0, 1.05, -1.18], size: [3.7, .55, .9], focus: { position: [0, 2, 1.25], target: [0, 1, -1.18] } },
       { id: 'synth_rack_left', type: 'SINTETIZADOR MODULAR', title: 'Voz modular A', description: 'Osciladores, filtros, modulación y patching táctil.', actions: ['Pad cálido', 'Secuencia', 'Bajo', 'Init'], position: [-3.22, 1.32, -3.65], size: [1.7, 2.7, .9], focus: { position: [-1.25, 1.8, -.9], target: [-3.22, 1.3, -3.65] } },

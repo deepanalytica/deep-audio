@@ -73,7 +73,7 @@ export default function ImmersiveRoom({ room, fallback }) {
   const design = ROOM_DESIGNS[room];
   const asset = getAsset(design.assetId);
 
-  return <group name={`${design.assetId}_scene`} userData={{ designSystem: 'immersive-room-001', glbAvailable: asset.available }}>
+  return <group name={`${design.assetId}_scene`} userData={{ designSystem: 'blender-premium-v7', glbAvailable: asset.available }}>
     <AssetModel assetId={design.assetId} fallback={fallback}/>
     <DesignedLighting design={design}/>
     {design.hitboxes.map((hotspot) => <RoomHitbox key={hotspot.id} hotspot={hotspot} accent={design.accent}/>)}
