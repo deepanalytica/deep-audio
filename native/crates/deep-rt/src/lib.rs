@@ -19,7 +19,7 @@ pub struct RtSender<T> { inner: Producer<T> }
 impl<T> RtSender<T> {
     #[inline]
     pub fn try_send(&mut self, value: T) -> Result<(), T> {
-        self.inner.push(value).map_err(|err| err.0)
+        self.inner.push(value).map_err(|err| match err { rtrb::PushError::Full(value) => value })
     }
 }
 
