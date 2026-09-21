@@ -1,0 +1,11 @@
+[package]
+name = "deep-playback"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+hound.workspace = true
+rtrb.workspace = true
+thiserror.workspace = true
