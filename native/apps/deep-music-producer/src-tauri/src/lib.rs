@@ -16,6 +16,8 @@ use std::time::{SystemTime,UNIX_EPOCH};
 struct Health{
     product:&'static str,
     rust_core:bool,
+    native_audio_compiled:bool,
+    asio_compiled:bool,
     schema_version:u32,
 }
 
@@ -120,7 +122,13 @@ fn status_from_service(service:&AudioService)->AudioStatus{
 }
 
 #[tauri::command]
-fn health()->Health{Health{product:"Deep Music Producer",rust_core:true,schema_version:CURRENT_SCHEMA_VERSION}}
+fn health()->Health{Health{
+    product:"Deep Music Producer",
+    rust_core:true,
+    native_audio_compiled:cfg!(feature="native-audio"),
+    asio_compiled:cfg!(feature="asio"),
+    schema_version:CURRENT_SCHEMA_VERSION
+}}
 
 #[tauri::command]
 fn parameter_snapshot(state:tauri::State<'_,EngineState>)->Vec<ParameterSnapshot>{state.params.snapshots()}
