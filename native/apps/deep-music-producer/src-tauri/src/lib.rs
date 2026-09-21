@@ -20,6 +20,13 @@ struct Health{
 }
 
 #[derive(Serialize,Clone)]
+struct ProjectInfo{
+    name:String,
+    path:String,
+    modified_unix:u64,
+}
+
+#[derive(Serialize,Clone)]
 struct AudioStatus{
     running:bool,
     backend:String,
@@ -182,6 +189,31 @@ fn save_session(state:tauri::State<'_,EngineState>,name:Option<String>)->Result<
 }
 
 #[tauri::command]
+fn list_sessions()->Result<Vec<ProjectInfo>,String>{
+    let dir=product_root().join("Projects");
+    if !dir.exists(){return Ok(Vec::new());}
+    let mut projects=Vec::new();
+    for entry in std::fs::read_dir(&dir).map_err(|e|e.to_string())?{
+        let entry=entry.map_err(|e|e.to_string())?;
+        let path=entry.path();
+        let Some(file_name)=path.file_name().and_then(|value|value.to_str()) else{continue;};
+        if !file_name.ends_with(".deepmusic.json"){continue;}
+        let modified_unix=entry.metadata().ok()
+            .and_then(|meta|meta.modified().ok())
+            .and_then(|time|time.duration_since(UNIX_EPOCH).ok())
+            .map(|duration|duration.as_secs())
+            .unwrap_or(0);
+        projects.push(ProjectInfo{
+            name:file_name.trim_end_matches(".deepmusic.json").to_string(),
+            path:path.to_string_lossy().into_owned(),
+            modified_unix,
+        });
+    }
+    projects.sort_by(|a,b|b.modified_unix.cmp(&a.modified_unix));
+    Ok(projects)
+}
+
+#[tauri::command]
 fn load_session(state:tauri::State<'_,EngineState>,path:String)->Result<Session,String>{
     let raw=std::fs::read_to_string(&path).map_err(|e|e.to_string())?;
     let mut loaded:Session=serde_json::from_str(&raw).map_err(|e|e.to_string())?;
@@ -195,6 +227,24 @@ fn load_session(state:tauri::State<'_,EngineState>,path:String)->Result<Session,
     state.transport.seek_samples(loaded.transport.position_samples);
     if loaded.transport.playing{state.transport.play();}else{state.transport.pause();}
     state.transport.set_recording(false);
+
+    let latest_clip=loaded.tracks.iter()
+        .flat_map(|track|track.clips.iter())
+        .max_by_key(|clip|clip.start_sample.saturating_add(clip.length_samples))
+        .cloned();
+
+    if let Some(clip)=latest_clip{
+        if let Ok(mut last)=state.last_recording.lock(){
+            *last=Some(RecordingSummary{
+                path:clip.path,
+                sample_rate:clip.sample_rate,
+                channels:clip.channels,
+                frames:clip.length_samples,
+                dropped_samples:0,
+            });
+        }
+    }
+
     let mut session=state.session.lock().map_err(|_|"session lock poisoned".to_string())?;
     *session=loaded.clone();
     Ok(loaded)
@@ -402,6 +452,7 @@ pub fn run(){
             set_room,
             session_snapshot,
             save_session,
+            list_sessions,
             load_session,
             audio_status,
             list_audio_devices,
