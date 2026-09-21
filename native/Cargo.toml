@@ -1,0 +1,44 @@
+[workspace]
+resolver = "2"
+members = [
+  "crates/deep-rt",
+  "crates/deep-params",
+  "crates/deep-metering",
+  "crates/deep-dsp",
+  "crates/deep-graph",
+  "crates/deep-audio-io",
+  "crates/deep-session",
+  "apps/deep-audio-lab",
+  "apps/deep-music-producer/src-tauri",
+  "plugins/deep-glue-clap",
+]
+default-members = [
+  "crates/deep-rt",
+  "crates/deep-params",
+  "crates/deep-metering",
+  "crates/deep-dsp",
+  "crates/deep-graph",
+  "crates/deep-audio-io",
+  "crates/deep-session",
+  "apps/deep-audio-lab",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "Proprietary"
+authors = ["Deep Analytica"]
+repository = "https://github.com/deepanalytica/deep-audio"
+
+[workspace.dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+rtrb = "0.3"
+cpal = "0.15.3"
+tauri = { version = "2", features = [] }
+tauri-build = { version = "2", features = [] }
+
+clack-plugin = { git = "https://github.com/prokopyl/clack.git", rev = "27ca28391b57a61bad4bb5099288a7bf9247350d" }
+clack-extensions = { git = "https://github.com/prokopyl/clack.git", rev = "27ca28391b57a61bad4bb5099288a7bf9247350d" }
