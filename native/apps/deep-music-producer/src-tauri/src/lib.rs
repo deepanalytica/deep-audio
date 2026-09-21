@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-use deep_dsp::{DeepGlueHandles,DeepMasterHandles,DeepMasterStage,DeepStudioChain};
+use deep_dsp::{DeepGlueHandles,DeepKeys,DeepKeysController,DeepKeysHandles,DeepMasterHandles,DeepMasterStage,DeepStudioChain};
 use deep_metering::{MeterSnapshot,SharedMeter};
 use deep_params::{ParameterBank,ParameterId,ParameterSnapshot};
 use deep_playback::{PlaybackController,PlaybackSpec};
@@ -51,6 +51,8 @@ struct EngineState{
     params:ParameterBank,
     glue_handles:DeepGlueHandles,
     master_handles:DeepMasterHandles,
+    keys_handles:DeepKeysHandles,
+    keys_control:Mutex<Option<DeepKeysController>>,
     meter:SharedMeter,
     transport:SharedTransport,
     audio:Mutex<Option<AudioService>>,
@@ -63,10 +65,13 @@ impl EngineState{
         let mut params=ParameterBank::new();
         let glue_handles=DeepGlueHandles::register(&mut params);
         let master_handles=DeepMasterHandles::register(&mut params);
+        let keys_handles=DeepKeysHandles::register(&mut params);
         Self{
             params,
             glue_handles,
             master_handles,
+            keys_handles,
+            keys_control:Mutex::new(None),
             meter:SharedMeter::new(),
             transport:SharedTransport::default(),
             audio:Mutex::new(None),
@@ -138,7 +143,7 @@ fn set_parameter(state:tauri::State<'_,EngineState>,id:u32,value:f32)->Result<f3
     let parameter_id=ParameterId(id);
     if !state.params.set(parameter_id,value){return Err(format!("unknown parameter id {id}"));}
     let applied=state.params.get(parameter_id).expect("parameter exists").get();
-    let device_type=if (7000..8000).contains(&id){"deep_master"}else{"deep_glue"};
+    let device_type=if (8000..9000).contains(&id){"deep_keys"}else if (7000..8000).contains(&id){"deep_master"}else{"deep_glue"};
     if let Ok(mut session)=state.session.lock(){session.set_parameter(device_type,parameter_id,applied);}
     Ok(applied)
 }
@@ -306,11 +311,13 @@ fn start_audio(
 
     let glue_handles=state.glue_handles.clone();
     let master_handles=state.master_handles.clone();
+    let keys_handles=state.keys_handles.clone();
     let meter=state.meter.clone();
     let transport=state.transport.clone();
     let recorder_capacity=48_000usize*2*8;
     let(recorder,record_tap)=RecorderController::new(recorder_capacity);
     let(playback,playback_tap)=PlaybackController::new(recorder_capacity);
+    let(keys_controller,keys_events)=DeepKeysController::channel(128);
     let(ready_tx,ready_rx)=std::sync::mpsc::channel::<Result<deep_audio_io::native::StreamInfo,String>>();
     let(stop_tx,stop_rx)=std::sync::mpsc::channel::<()>();
     let preference=if prefer_asio{BackendPreference::Asio}else{BackendPreference::Default};
@@ -318,7 +325,8 @@ fn start_audio(
     std::thread::Builder::new().name("deep-audio-service".into()).spawn(move||{
         let glue=DeepGlue::new(glue_handles,meter.clone());
         let master=DeepMasterStage::new(master_handles,meter);
-        let processor=DeepStudioChain::new(glue,master);
+        let keys=DeepKeys::new(keys_handles,keys_events);
+        let processor=DeepStudioChain::new(glue,master).with_keys(keys);
         match CpalDuplex::start_with_devices(
             processor,
             preference,
@@ -343,6 +351,7 @@ fn start_audio(
             let service=AudioService{stop:stop_tx,recorder,playback,info,backend};
             let status=status_from_service(&service);
             *slot=Some(service);
+            *state.keys_control.lock().map_err(|_|"keys control lock poisoned".to_string())?=Some(keys_controller);
             Ok(status)
         }
         Ok(Err(error))=>Err(error),
@@ -373,8 +382,33 @@ fn stop_audio(state:tauri::State<'_,EngineState>)->Result<(),String>{
         service.recorder.shutdown();
         let _=service.stop.send(());
     }
+    if let Ok(mut keys)=state.keys_control.lock(){
+        if let Some(controller)=keys.as_mut(){let _=controller.all_off();}
+        *keys=None;
+    }
     state.transport.stop();
     Ok(())
+}
+
+#[tauri::command]
+fn note_on(state:tauri::State<'_,EngineState>,note:u8,velocity:f32)->Result<(),String>{
+    let mut control=state.keys_control.lock().map_err(|_|"keys control lock poisoned".to_string())?;
+    let controller=control.as_mut().ok_or_else(||"native audio engine is not running".to_string())?;
+    if controller.note_on(note,velocity){Ok(())}else{Err("note event queue is full".into())}
+}
+
+#[tauri::command]
+fn note_off(state:tauri::State<'_,EngineState>,note:u8)->Result<(),String>{
+    let mut control=state.keys_control.lock().map_err(|_|"keys control lock poisoned".to_string())?;
+    let controller=control.as_mut().ok_or_else(||"native audio engine is not running".to_string())?;
+    if controller.note_off(note){Ok(())}else{Err("note event queue is full".into())}
+}
+
+#[tauri::command]
+fn all_notes_off(state:tauri::State<'_,EngineState>)->Result<(),String>{
+    let mut control=state.keys_control.lock().map_err(|_|"keys control lock poisoned".to_string())?;
+    let controller=control.as_mut().ok_or_else(||"native audio engine is not running".to_string())?;
+    if controller.all_off(){Ok(())}else{Err("note event queue is full".into())}
 }
 
 #[tauri::command]
@@ -480,6 +514,9 @@ pub fn run(){
             list_audio_devices,
             start_audio,
             stop_audio,
+            note_on,
+            note_off,
+            all_notes_off,
             start_recording,
             stop_recording,
             play_last_recording,
