@@ -45,7 +45,9 @@ impl DeepGlueShared{
     fn handle_for_clap(&self,id:ClapId)->Option<&ParameterHandle>{self.handles.by_id(ParameterId(id.get()))}
     fn handle_event(&self,event:&UnknownEvent){
         if let Some(CoreEventSpace::ParamValue(event))=event.as_core_event(){
-            if let Some(handle)=self.handle_for_clap(event.param_id()){handle.set(event.value() as f32);}
+            if let Some(param_id)=event.param_id(){
+                if let Some(handle)=self.handle_for_clap(param_id){handle.set(event.value() as f32);}
+            }
         }
     }
 }
