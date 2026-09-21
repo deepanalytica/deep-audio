@@ -1,6 +1,7 @@
 use crate::BackendPreference;
 use cpal::traits::{DeviceTrait,HostTrait,StreamTrait};
 use deep_dsp::{AudioBlockMut,AudioProcessor,ProcessContext};
+use deep_playback::PlaybackTap;
 use deep_record::RecordingTap;
 use deep_transport::SharedTransport;
 use rtrb::RingBuffer;
@@ -85,23 +86,25 @@ impl CpalDuplex{
 
     pub fn start<P>(processor:P,preference:BackendPreference)->Result<Self,AudioIoError>
     where P:AudioProcessor+'static{
-        Self::start_with_runtime(processor,preference,None,None)
+        Self::start_with_runtime(processor,preference,None,None,None)
     }
 
     pub fn start_with_runtime<P>(
         processor:P,
         preference:BackendPreference,
         recorder:Option<RecordingTap>,
+        playback:Option<PlaybackTap>,
         transport:Option<SharedTransport>,
     )->Result<Self,AudioIoError>
     where P:AudioProcessor+'static{
-        Self::start_with_devices(processor,preference,recorder,transport,None,None)
+        Self::start_with_devices(processor,preference,recorder,playback,transport,None,None)
     }
 
     pub fn start_with_devices<P>(
         mut processor:P,
         preference:BackendPreference,
         mut recorder:Option<RecordingTap>,
+        mut playback:Option<PlaybackTap>,
         transport:Option<SharedTransport>,
         input_name:Option<&str>,
         output_name:Option<&str>,
@@ -163,6 +166,7 @@ impl CpalDuplex{
                 if let Some(mut block)=AudioBlockMut::new(data,out_ch){
                     let frames=block.frames() as u64;
                     processor.process(&mut block,ctx);
+                    if let Some(playback)=playback.as_mut(){playback.mix_into(data);}
                     if let Some(recorder)=recorder.as_mut(){recorder.capture(data);}
                     if let Some(transport)=transport_for_callback.as_ref(){transport.advance(frames);}
                 }
