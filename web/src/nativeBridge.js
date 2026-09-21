@@ -35,6 +35,7 @@ export async function nativeMeter(){return isNativeShell()?invoke('meter_snapsho
 export async function nativeAudioStatus(){return isNativeShell()?invoke('audio_status'):{running:false,backend:'web'};}
 export async function nativeTransportSnapshot(){return isNativeShell()?invoke('transport_snapshot'):{playing:false,recording:false,position_samples:0,bpm:120};}
 export async function nativeTransport(action,{bpm=null,positionSamples=null}={}){return invoke('transport_command',{action,bpm,positionSamples});}
+export async function setNativeMetronome(enabled){return invoke('set_metronome',{enabled});}
 export async function setNativeRoom(room){if(isNativeShell())await invoke('set_room',{room});}
 export async function listNativeAudioDevices(preferAsio=false){return invoke('list_audio_devices',{preferAsio});}
 export async function startNativeAudio(preferAsio=false,inputDevice=null,outputDevice=null){return invoke('start_audio',{preferAsio,inputDevice,outputDevice});}
