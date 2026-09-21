@@ -50,22 +50,45 @@ pub struct PlaybackTap {
     consumer: Consumer<PlaybackSample>,
     active: Arc<AtomicBool>,
     generation: Arc<AtomicU64>,
+    eof: Arc<AtomicBool>,
 }
 
 impl PlaybackTap {
     #[inline]
     pub fn mix_into(&mut self, output: &mut [f32]) {
         let generation = self.generation.load(Ordering::Acquire);
-        let active = self.active.load(Ordering::Acquire);
+        if !self.active.load(Ordering::Acquire) {
+            return;
+        }
 
+        let mut queue_empty = false;
         for target in output {
-            let Ok(sample) = self.consumer.pop() else {
+            loop {
+                match self.consumer.pop() {
+                    Ok(sample) if sample.generation == generation => {
+                        *target = (*target + sample.value).clamp(-1.0, 1.0);
+                        break;
+                    }
+                    Ok(_) => continue,
+                    Err(_) => {
+                        queue_empty = true;
+                        break;
+                    }
+                }
+            }
+            if queue_empty {
                 break;
-            };
-            if active && sample.generation == generation {
-                *target = (*target + sample.value).clamp(-1.0, 1.0);
             }
         }
+
+        if queue_empty && self.eof.load(Ordering::Acquire) {
+            self.active.store(false, Ordering::Release);
+        }
+    }
+
+    #[inline]
+    pub fn is_playing(&self) -> bool {
+        self.active.load(Ordering::Acquire)
     }
 }
 
@@ -81,12 +104,14 @@ impl PlaybackController {
         let (command_tx, command_rx) = mpsc::channel();
         let active = Arc::new(AtomicBool::new(false));
         let generation = Arc::new(AtomicU64::new(0));
+        let eof = Arc::new(AtomicBool::new(false));
 
         let worker_active = active.clone();
         let worker_generation = generation.clone();
+        let worker_eof = eof.clone();
         let worker = thread::Builder::new()
             .name("deep-playback-reader".into())
-            .spawn(move || playback_loop(producer, command_rx, worker_active, worker_generation))
+            .spawn(move || playback_loop(producer, command_rx, worker_active, worker_generation, worker_eof))
             .expect("playback worker thread must start");
 
         (
@@ -99,6 +124,7 @@ impl PlaybackController {
                 consumer,
                 active,
                 generation,
+                eof,
             },
         )
     }
@@ -151,6 +177,7 @@ fn playback_loop(
     command_rx: mpsc::Receiver<Command>,
     active: Arc<AtomicBool>,
     generation: Arc<AtomicU64>,
+    eof: Arc<AtomicBool>,
 ) {
     let mut reader: Option<hound::WavReader<std::io::BufReader<std::fs::File>>> = None;
     let mut pending: Option<PlaybackSample> = None;
@@ -161,6 +188,7 @@ fn playback_loop(
             match command {
                 Command::Play { path, spec, reply } => {
                     active.store(false, Ordering::Release);
+                    eof.store(false, Ordering::Release);
                     reader = None;
                     pending = None;
                     current_generation = generation.fetch_add(1, Ordering::AcqRel) + 1;
@@ -191,12 +219,14 @@ fn playback_loop(
                 }
                 Command::Stop => {
                     active.store(false, Ordering::Release);
+                    eof.store(false, Ordering::Release);
                     reader = None;
                     pending = None;
                     generation.fetch_add(1, Ordering::AcqRel);
                 }
                 Command::Shutdown => {
                     active.store(false, Ordering::Release);
+                    eof.store(false, Ordering::Release);
                     return;
                 }
             }
@@ -224,7 +254,7 @@ fn playback_loop(
                         break;
                     }
                     None => {
-                        active.store(false, Ordering::Release);
+                        eof.store(true, Ordering::Release);
                         reader = None;
                         break;
                     }
@@ -249,10 +279,51 @@ fn playback_loop(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
     fn controller_starts_inactive() {
         let (controller, _tap) = PlaybackController::new(64);
         assert!(!controller.is_playing());
+    }
+
+    #[test]
+    fn eof_waits_until_prefetched_tail_is_consumed() {
+        let stamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let path = std::env::temp_dir().join(format!("deep-playback-eof-{}-{stamp}.wav", std::process::id()));
+        let spec = hound::WavSpec {
+            channels: 2,
+            sample_rate: 48_000,
+            bits_per_sample: 32,
+            sample_format: hound::SampleFormat::Float,
+        };
+        let mut writer = hound::WavWriter::create(&path, spec).unwrap();
+        for sample in [0.1_f32, -0.1, 0.2, -0.2] {
+            writer.write_sample(sample).unwrap();
+        }
+        writer.finalize().unwrap();
+
+        let (mut controller, mut tap) = PlaybackController::new(4_096);
+        controller.play(&path, PlaybackSpec { sample_rate: 48_000, channels: 2 }).unwrap();
+
+        for _ in 0..50 {
+            if tap.eof.load(Ordering::Acquire) {
+                break;
+            }
+            thread::sleep(Duration::from_millis(2));
+        }
+
+        assert!(controller.is_playing(), "EOF must not deactivate playback while queued samples remain");
+
+        let mut output = [0.0_f32; 4];
+        tap.mix_into(&mut output);
+        assert_eq!(output, [0.1, -0.1, 0.2, -0.2]);
+
+        let mut drain = [0.0_f32; 2];
+        tap.mix_into(&mut drain);
+        assert!(!controller.is_playing());
+
+        controller.shutdown();
+        let _ = std::fs::remove_file(path);
     }
 }
