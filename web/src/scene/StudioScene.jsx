@@ -4,7 +4,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { CameraControls, ContactShadows, RoundedBox } from '@react-three/drei';
 import { Bloom, EffectComposer, Noise, Vignette } from '@react-three/postprocessing';
 import { useStudioStore } from '../store.js';
-import { ROOMS } from '../data.js';
+import { PERSPECTIVES, ROOMS } from '../data.js';
 import {
   RoomShell, StudioMonitor, Rack, Amplifier, Guitar, DrumKit, Keyboard,
   SynthRack, ConsoleDesk, Microphone, SessionPlayer, AcousticPanel
@@ -27,6 +27,7 @@ function useReducedMotion(){
 function CameraRig(){
   const controls=useRef();
   const room=useStudioStore((s)=>s.room);
+  const perspective=useStudioStore((s)=>s.perspective);
   const selected=useStudioStore((s)=>s.selected);
   const keys=useRef(new Set());
   const reducedMotion=useReducedMotion();
@@ -42,9 +43,10 @@ function CameraRig(){
   },[]);
 
   useEffect(()=>{
-    const cfg=selected?.focus||ROOMS[room].camera;
+    const view=PERSPECTIVES[room]?.find((item)=>item.id===perspective);
+    const cfg=selected?.focus||view?.camera||ROOMS[room].camera;
     controls.current?.setLookAt(...cfg.position,...cfg.target,!reducedMotion);
-  },[room,selected,reducedMotion]);
+  },[room,perspective,selected,reducedMotion]);
 
   useFrame((_,dt)=>{
     const c=controls.current;if(!c)return;

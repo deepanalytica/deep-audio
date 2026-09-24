@@ -41,6 +41,34 @@ export const ROOMS = {
   }
 };
 
+export const PERSPECTIVES = {
+  practice:[
+    {id:'overview',label:'Sala',hint:'Vista completa',camera:{position:[0,2.38,3.86],target:[0,1.24,-2.72]}},
+    {id:'perform',label:'Interpretación',hint:'Frente a la banda',camera:{position:[0,1.72,1.05],target:[0,1.05,-3.35]}},
+    {id:'equipment',label:'Equipo',hint:'Amplis y teclas',camera:{position:[-1.7,1.78,.25],target:[2.6,1.05,-4.65]}}
+  ],
+  record:[
+    {id:'overview',label:'Sala',hint:'Tracking completo',camera:{position:[0,2.38,4.05],target:[0,1.24,-2.72]}},
+    {id:'perform',label:'Captura',hint:'Punto de toma',camera:{position:[.15,1.72,.7],target:[2.2,1.35,-2.45]}},
+    {id:'equipment',label:'Cadena',hint:'Previos y rack',camera:{position:[1.2,1.72,-.2],target:[3.65,1.2,-4.65]}}
+  ],
+  production:[
+    {id:'overview',label:'Sala',hint:'Lienzo completo',camera:{position:[0,2.28,3.86],target:[0,1.18,-2.72]}},
+    {id:'perform',label:'Teclado',hint:'Centro creativo',camera:{position:[0,1.68,1.15],target:[0,1,-1.35]}},
+    {id:'equipment',label:'Sintetizadores',hint:'Racks laterales',camera:{position:[-1.6,1.72,.15],target:[-3.1,1.3,-3.55]}}
+  ],
+  mix:[
+    {id:'overview',label:'Sala',hint:'Control room',camera:{position:[0,2.38,4.08],target:[0,1.24,-2.72]}},
+    {id:'perform',label:'Consola',hint:'Posición de mezcla',camera:{position:[0,1.72,1.15],target:[0,.98,-1.45]}},
+    {id:'equipment',label:'Racks',hint:'Dinámica y espacio',camera:{position:[-1.8,1.78,.2],target:[-3.45,1.15,-3.75]}}
+  ],
+  master:[
+    {id:'overview',label:'Sala',hint:'Suite completa',camera:{position:[0,2.1,2.25],target:[0,1.18,-4.2]}},
+    {id:'perform',label:'Escucha',hint:'Sweet spot',camera:{position:[0,1.62,.75],target:[0,1.22,-4.65]}},
+    {id:'equipment',label:'Cadena',hint:'Control final',camera:{position:[1.65,1.72,.15],target:[0,1.2,-4.2]}}
+  ]
+};
+
 export const MUSICIANS = [
   {id:'drummer', initials:'DR', name:'Baterista', subtitle:'Pocket · dinámica · fills', style:'Neo Soul / Rock / Pop'},
   {id:'bassist', initials:'BS', name:'Bajista', subtitle:'Fundamento · ghost notes · feel', style:'Finger / Pick / Synth'},
