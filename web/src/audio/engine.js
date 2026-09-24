@@ -18,10 +18,11 @@ function recordingName(extension){
 
 class StudioAudioEngine{
   constructor(){
-    this.ctx=null;this.mix=null;this.convolver=null;this.wet=null;this.master=null;this.comp=null;
+    this.ctx=null;this.mix=null;this.convolver=null;this.wet=null;this.tone=null;this.saturator=null;this.comp=null;this.limiter=null;this.master=null;
+    this.stereoSideGains=[];
     this.timer=null;this.nextTime=0;this.step=0;
     this.backing=null;this.backingSource=null;this.backingUrl=null;
-    this.mediaRecorder=null;this.recordingStream=null;this.recordingChunks=[];this.recordingResult=null;
+    this.mediaRecorder=null;this.recordingStream=null;this.recordingChunks=[];this.recordingResult=null;this.micMonitor=null;
     this.recordingUrl=null;
   }
   async init(){
@@ -32,19 +33,96 @@ class StudioAudioEngine{
       this.mix=this.ctx.createGain();
       this.convolver=this.ctx.createConvolver();
       this.wet=this.ctx.createGain();
+      this.tone=this.ctx.createBiquadFilter();
+      this.tone.type='highshelf';this.tone.frequency.value=3200;
+      this.saturator=this.ctx.createWaveShaper();
       this.master=this.ctx.createGain();
       this.comp=this.ctx.createDynamicsCompressor();
-      this.master.gain.value=.64;
-      this.mix.connect(this.master);
+      this.limiter=this.ctx.createDynamicsCompressor();
+      this.master.gain.value=.72;
+      this.mix.connect(this.tone);
       this.mix.connect(this.convolver);
       this.convolver.connect(this.wet);
-      this.wet.connect(this.master);
-      this.master.connect(this.comp);
-      this.comp.connect(this.ctx.destination);
+      this.wet.connect(this.tone);
+      this.tone.connect(this.saturator);
+      this.connectStereoWidth(this.saturator,this.comp);
+      this.comp.connect(this.limiter);
+      this.limiter.connect(this.master);
+      this.master.connect(this.ctx.destination);
       this.setRoom(useStudioStore.getState().roomSound);
+      this.setMastering(useStudioStore.getState().masteringControls);
+      this.setVolume(useStudioStore.getState().volume);
     }
     if(this.ctx.state==='suspended')await this.ctx.resume();
     useStudioStore.getState().setAudioReady(true);
+  }
+  connectStereoWidth(source,destination){
+    const splitter=this.ctx.createChannelSplitter(2),merger=this.ctx.createChannelMerger(2);
+    const mid=this.ctx.createGain(),side=this.ctx.createGain();
+    const lMid=this.ctx.createGain(),rMid=this.ctx.createGain(),lSide=this.ctx.createGain(),rSide=this.ctx.createGain();
+    const midL=this.ctx.createGain(),midR=this.ctx.createGain(),sideL=this.ctx.createGain(),sideR=this.ctx.createGain();
+    lMid.gain.value=.5;rMid.gain.value=.5;lSide.gain.value=.5;rSide.gain.value=-.5;
+    midL.gain.value=1;midR.gain.value=1;sideL.gain.value=1;sideR.gain.value=-1;
+    source.connect(splitter);splitter.connect(lMid,0);splitter.connect(rMid,1);splitter.connect(lSide,0);splitter.connect(rSide,1);
+    lMid.connect(mid);rMid.connect(mid);lSide.connect(side);rSide.connect(side);
+    mid.connect(midL);mid.connect(midR);side.connect(sideL);side.connect(sideR);
+    midL.connect(merger,0,0);sideL.connect(merger,0,0);midR.connect(merger,0,1);sideR.connect(merger,0,1);
+    merger.connect(destination);this.stereoSideGains=[lSide,rSide];
+  }
+  saturationCurve(amount=0){
+    const samples=2048,curve=new Float32Array(samples),drive=Math.max(0,amount)/100*9;
+    for(let i=0;i<samples;i++){
+      const x=i*2/(samples-1)-1;
+      curve[i]=drive?Math.tanh(x*(1+drive))/Math.tanh(1+drive):x;
+    }
+    return curve;
+  }
+  setMastering(controls={}){
+    if(!this.ctx)return;
+    this.applyMasteringNodes({tone:this.tone,saturator:this.saturator,comp:this.comp,limiter:this.limiter},controls);
+    const width=Math.max(0,Math.min(1.5,(Number(controls.stereo)||0)/100));
+    const now=this.ctx.currentTime;
+    this.stereoSideGains[0]?.gain.setTargetAtTime(.5*width,now,.03);
+    this.stereoSideGains[1]?.gain.setTargetAtTime(-.5*width,now,.03);
+    if(this.micMonitor)this.applyMasteringNodes(this.micMonitor,controls);
+  }
+  applyMasteringNodes(nodes,controls={}){
+    const now=this.ctx.currentTime,tone=Number(controls.tone)||0,contour=Number(controls.dynamicEq)||0,compression=Number(controls.compression)||0;
+    nodes.tone.gain.setTargetAtTime(tone*.06,now,.03);
+    nodes.tone.Q.setTargetAtTime(.3+contour*.012,now,.03);
+    nodes.saturator.curve=this.saturationCurve(controls.saturation);nodes.saturator.oversample='2x';
+    nodes.comp.threshold.setTargetAtTime(-8-compression*.28,now,.03);
+    nodes.comp.ratio.setTargetAtTime(1+compression*.065,now,.03);
+    nodes.comp.knee.setTargetAtTime(4+contour*.26,now,.03);
+    nodes.comp.attack.setTargetAtTime(.018,now,.03);nodes.comp.release.setTargetAtTime(.22,now,.03);
+    nodes.limiter.threshold.setTargetAtTime(Math.max(-3,Math.min(0,Number(controls.ceiling)||0)),now,.02);
+    nodes.limiter.knee.setTargetAtTime(0,now,.02);nodes.limiter.ratio.setTargetAtTime(20,now,.02);
+    nodes.limiter.attack.setTargetAtTime(.003,now,.02);nodes.limiter.release.setTargetAtTime(.08,now,.02);
+  }
+  setVolume(value){
+    if(!this.ctx)return;
+    const normalized=Math.max(0,Math.min(100,Number(value)||0))/100;
+    this.master.gain.setTargetAtTime(normalized,this.ctx.currentTime,.025);
+  }
+  setInputMonitor(enabled){
+    if(!this.ctx||!this.micMonitor)return;
+    this.micMonitor.monitorGain.gain.setTargetAtTime(enabled?.72:0,this.ctx.currentTime,.02);
+  }
+  async startInputMonitor(){
+    await this.init();
+    if(!navigator.mediaDevices?.getUserMedia)throw new Error('La monitorización de entrada no está disponible en este navegador.');
+    if(!this.recordingStream){
+      const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+      try{this.createMicMonitor(stream);this.recordingStream=stream}
+      catch(error){stream.getTracks().forEach((track)=>track.stop());throw error}
+    }else if(!this.micMonitor)this.createMicMonitor(this.recordingStream);
+    this.setInputMonitor(true);
+  }
+  stopInputMonitor(){
+    this.setInputMonitor(false);
+    if(this.mediaRecorder?.state==='recording')return;
+    this.recordingStream?.getTracks().forEach((track)=>track.stop());
+    this.recordingStream=null;this.cleanupMicMonitor();
   }
   setRoom(name){
     if(!this.ctx)return;
@@ -61,6 +139,7 @@ class StudioAudioEngine{
     }
     this.convolver.buffer=impulse;
     this.wet.gain.setTargetAtTime(profile.wet,this.ctx.currentTime,.03);
+    if(this.micMonitor){this.micMonitor.convolver.buffer=impulse;this.micMonitor.wet.gain.setTargetAtTime(profile.wet,this.ctx.currentTime,.03)}
   }
   async loadTrack(file){
     if(!file)throw new Error('No se seleccionó ningún archivo.');
@@ -97,14 +176,33 @@ class StudioAudioEngine{
     return track;
   }
   getPositionMs(){return this.backing?this.backing.currentTime*1000:null}
+  seekTo(seconds){
+    if(!this.backing||!Number.isFinite(this.backing.duration))return;
+    this.backing.currentTime=Math.max(0,Math.min(this.backing.duration,Number(seconds)||0));
+  }
+  unloadTrack(){
+    this.pause();
+    if(this.backing){this.backing.pause();this.backingSource?.disconnect()}
+    if(this.backingUrl)URL.revokeObjectURL(this.backingUrl);
+    this.backing=null;this.backingSource=null;this.backingUrl=null;
+    useStudioStore.getState().setTrack(null);
+  }
   async startRecording(){
     if(this.mediaRecorder?.state==='recording')return;
     if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){
       throw new Error('La grabación de micrófono no está disponible en este navegador.');
     }
-    const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    await this.init();
+    const existingStream=this.recordingStream;
+    const stream=existingStream||await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    if(!this.micMonitor){
+      try{this.createMicMonitor(stream)}
+      catch(error){if(!existingStream)stream.getTracks().forEach((track)=>track.stop());throw error}
+    }
     const mimeType=RECORDING_TYPES.find((type)=>MediaRecorder.isTypeSupported(type));
-    const recorder=new MediaRecorder(stream,mimeType?{mimeType}:undefined);
+    let recorder;
+    try{recorder=new MediaRecorder(stream,mimeType?{mimeType}:undefined)}
+    catch(error){if(!existingStream){stream.getTracks().forEach((track)=>track.stop());this.cleanupMicMonitor()}throw error}
     this.recordingStream=stream;
     this.mediaRecorder=recorder;
     this.recordingChunks=[];
@@ -112,7 +210,9 @@ class StudioAudioEngine{
       recorder.addEventListener('dataavailable',(event)=>{if(event.data.size)this.recordingChunks.push(event.data)});
       recorder.addEventListener('error',(event)=>{
         this.recordingStream?.getTracks().forEach((track)=>track.stop());
+        this.cleanupMicMonitor();
         this.recordingStream=null;this.mediaRecorder=null;this.recordingChunks=[];
+        useStudioStore.getState().setInputMonitor(false);
         reject(event.error||new Error('La grabación se interrumpió.'));
       },{once:true});
       recorder.addEventListener('stop',()=>{
@@ -122,13 +222,32 @@ class StudioAudioEngine{
         this.recordingUrl=URL.createObjectURL(blob);
         const result={url:this.recordingUrl,name:recordingName(recordingExtension(type)),size:blob.size,type};
         this.recordingStream?.getTracks().forEach((track)=>track.stop());
+        this.cleanupMicMonitor();
         this.recordingStream=null;this.mediaRecorder=null;this.recordingChunks=[];
         this.recordingResult=null;
+        useStudioStore.getState().setInputMonitor(false);
         useStudioStore.getState().setLastRecording(result);
         resolve(result);
       },{once:true});
     });
-    recorder.start(250);
+    try{recorder.start(250)}
+    catch(error){if(!existingStream){stream.getTracks().forEach((track)=>track.stop());this.cleanupMicMonitor();this.recordingStream=null}this.mediaRecorder=null;this.recordingResult=null;throw error}
+  }
+  createMicMonitor(stream){
+    const source=this.ctx.createMediaStreamSource(stream),convolver=this.ctx.createConvolver(),wet=this.ctx.createGain();
+    const tone=this.ctx.createBiquadFilter(),saturator=this.ctx.createWaveShaper(),comp=this.ctx.createDynamicsCompressor(),limiter=this.ctx.createDynamicsCompressor();
+    const monitorGain=this.ctx.createGain();
+    tone.type='highshelf';tone.frequency.value=3200;convolver.buffer=this.convolver.buffer;
+    const room=ROOM_SOUNDS.find((item)=>item.name===useStudioStore.getState().roomSound)||ROOM_SOUNDS[1];wet.gain.value=room.wet;
+    monitorGain.gain.value=useStudioStore.getState().inputMonitor?.72:0;
+    source.connect(tone);source.connect(convolver);convolver.connect(wet);wet.connect(tone);tone.connect(saturator);saturator.connect(comp);comp.connect(limiter);limiter.connect(monitorGain);monitorGain.connect(this.master);
+    this.micMonitor={source,convolver,wet,tone,saturator,comp,limiter,monitorGain};
+    this.applyMasteringNodes(this.micMonitor,useStudioStore.getState().masteringControls);
+  }
+  cleanupMicMonitor(){
+    if(!this.micMonitor)return;
+    Object.values(this.micMonitor).forEach((node)=>{if(typeof node?.disconnect==='function')node.disconnect()});
+    this.micMonitor=null;
   }
   async stopRecording(){
     if(!this.mediaRecorder||this.mediaRecorder.state==='inactive')return null;

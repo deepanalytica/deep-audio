@@ -34,6 +34,24 @@ When I want a useful instrument sound, give me excellent starting points in musi
 
 When a song is ready to finish, guide me from balance to master using measurements and reversible recommendations.
 
+## Current studio experience
+
+Each workflow room provides three authored camera perspectives: a complete room view, a task-focused listening or performance position, and an equipment-focused view. Changing rooms returns to the complete room view so orientation stays predictable.
+
+The compact transport dock keeps the primary loop in one place:
+
+- import and remove a local audio track;
+- play, pause, stop and seek within it;
+- start and stop a dry recording;
+- enable an optional processed input monitor;
+- control metronome, BPM and output volume.
+
+Room-equipment actions are live controls rather than conceptual previews. Depending on the selected device, an action can change the active players or tone, room sound, BPM, output volume, or mastering settings, and its result is audible immediately.
+
+Mastering provides reversible starting profiles plus direct control over tone, contour, compression, saturation, stereo width and limiter ceiling. Measurement readouts remain explicitly labelled as simulated demonstrations; they are not presented as an objective judgement of the master.
+
+Recording follows D003: the captured microphone signal stays dry even when the musician enables the processed monitor. Monitoring is optional, and headphones are recommended to prevent feedback.
+
 ## Product principles
 
 - Instrument before interface.
@@ -56,6 +74,7 @@ The MVP succeeds when a new user can:
 - choose a useful starting tone;
 - import a song;
 - play the song with a metronome;
+- seek within it, adjust output volume or remove it without changing the original file;
 - record a clean 24-bit take;
 - find the recorded file;
 
@@ -72,7 +91,7 @@ Quantitative targets:
 
 ## Explicit non-goals for v0.1
 
-- Full MIDI production.
+- MIDI sequencing, sample browsing and sample-based production workflows; these belong to a subsequent phase.
 - Virtual instrument marketplace.
 - Cloud collaboration.
 - Stem separation.

@@ -22,10 +22,10 @@ Before M2 multi-track editing.
 ## D003 — Record dry, monitor processed
 
 Decision:
-The recorded source is dry while the player hears the selected tone chain.
+The recorded source is always dry. Processed input monitoring is a separate, optional listening path that follows the selected room and tone/mastering chain. The product recommends headphones when that monitor is enabled.
 
 Why:
-A fast preset should improve the playing experience without permanently baking a decision into the source recording.
+A fast preset should improve the playing experience without permanently baking a decision into the source recording. Keeping monitoring independent also lets the musician silence the live return without changing recording behaviour and reduces accidental feedback risk.
 
 ## D004 — No AI in the audio callback
 
@@ -54,7 +54,15 @@ Plugin discovery, compatibility, UI embedding, crash isolation and support are a
 ## D007 — Rooms are workflow states, not separate apps
 
 Decision:
-Ensayo, Grabación, Mezcla and Master share one project/session.
+Ensayo, Grabación, Producción, Mezcla and Master share one project/session.
 
 Why:
 The mental model should follow the musician's work. Files should not need to be manually exported and re-imported between stages.
+
+## D008 — MIDI and sample workflows follow the core audio loop
+
+Decision:
+Do not describe MIDI sequencing, sample browsing or sample-based production as implemented in the current studio. Treat them as a subsequent product phase.
+
+Why:
+The current implementation validates the primary local-audio loop: room navigation, live equipment actions, backing-track transport, dry recording with optional processed monitoring and reversible mastering controls. Expanding the production surface before that loop is proven would blur the product's actual capabilities.

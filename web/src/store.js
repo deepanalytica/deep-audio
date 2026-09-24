@@ -2,14 +2,17 @@ import { create } from 'zustand';
 
 export const useStudioStore = create((set,get) => ({
   room:'practice',
+  perspective:'overview',
   selected:null,
   drawer:null,
   mapOpen:false,
   audioReady:false,
   playing:false,
   recording:false,
+  inputMonitor:false,
   metronome:false,
   bpm:120,
+  volume:72,
   key:'C',
   progression:'I–V–vi–IV',
   roomSound:'Studio Live',
@@ -18,6 +21,7 @@ export const useStudioStore = create((set,get) => ({
   notice:null,
   masteringProfile:'Natural',
   masteringControls:{tone:0,dynamicEq:28,compression:18,saturation:8,stereo:100,ceiling:-1},
+  equipmentSettings:{},
   activePlayers:[],
   roomTransition:{active:false,target:null,id:0},
   startup:{
@@ -39,13 +43,14 @@ export const useStudioStore = create((set,get) => ({
     set({roomTransition:{active:true,target:room,id},selected:null,mapOpen:false,drawer:null});
     window.setTimeout(()=>{
       if(get().roomTransition.id!==id)return;
-      set({room,selected:null,mapOpen:false});
+      set({room,perspective:'overview',selected:null,mapOpen:false});
     },80);
     window.setTimeout(()=>{
       if(get().roomTransition.id!==id)return;
       set({roomTransition:{active:false,target:null,id}});
     },360);
   },
+  setPerspective:(perspective)=>set({perspective,selected:null}),
   select:(selected)=>set({selected,drawer:null,mapOpen:false}),
   closeSelected:()=>set({selected:null}),
   openDrawer:(drawer)=>set({drawer,selected:null,mapOpen:false}),
@@ -65,8 +70,10 @@ export const useStudioStore = create((set,get) => ({
   })),
   setPlaying:(playing)=>set({playing}),
   setRecording:(recording)=>set({recording}),
+  setInputMonitor:(inputMonitor)=>set({inputMonitor}),
   setMetronome:(metronome)=>set({metronome}),
   setBpm:(bpm)=>set({bpm}),
+  setVolume:(volume)=>set({volume}),
   setKey:(key)=>set({key}),
   setProgression:(progression)=>set({progression}),
   setRoomSound:(roomSound)=>set({roomSound}),
@@ -75,9 +82,12 @@ export const useStudioStore = create((set,get) => ({
   notify:(message,tone='info')=>set({notice:{message,tone,id:Date.now()}}),
   clearNotice:()=>set({notice:null}),
   setMasteringProfile:(masteringProfile)=>set({masteringProfile}),
+  setMasteringControls:(masteringControls)=>set({masteringControls}),
   setMasteringControl:(control,value)=>set((s)=>({
     masteringControls:{...s.masteringControls,[control]:value}
   })),
+  setEquipmentSetting:(equipment,setting)=>set((s)=>({equipmentSettings:{...s.equipmentSettings,[equipment]:setting}})),
+  setActivePlayers:(activePlayers)=>set({activePlayers}),
   togglePlayer:(id)=>set((s)=>({
     activePlayers:s.activePlayers.includes(id)
       ? s.activePlayers.filter((x)=>x!==id)
