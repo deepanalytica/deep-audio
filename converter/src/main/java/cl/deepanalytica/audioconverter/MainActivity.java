@@ -67,6 +67,7 @@ public class MainActivity extends Activity {
     private Button openButton;
     private Button shareButton;
     private ProgressBar progressBar;
+    private LinearLayout resultCard;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -221,7 +222,7 @@ public class MainActivity extends Activity {
 
         spacer(root, 16);
 
-        LinearLayout resultCard = cardContainer();
+        resultCard = cardContainer();
         resultCard.setBackground(roundRect(Color.rgb(18, 44, 43), 22));
         resultCard.setTag("resultCard");
         resultCard.setVisibility(View.GONE);
@@ -462,12 +463,10 @@ public class MainActivity extends Activity {
 
     private void showResult(String fileName) {
         resultText.setText("Archivo guardado\n" + fileName);
-        View resultCard = findViewWithTag("resultCard");
         if (resultCard != null) resultCard.setVisibility(View.VISIBLE);
     }
 
     private void hideResult() {
-        View resultCard = findViewWithTag("resultCard");
         if (resultCard != null) resultCard.setVisibility(View.GONE);
         outputUri = null;
     }
@@ -515,7 +514,7 @@ public class MainActivity extends Activity {
     private Button actionButton(String value, boolean filled) {
         Button b = new Button(this);
         b.setText(value);
-        b.setTextAllCaps(false);
+        b.setAllCaps(false);
         b.setTextSize(15);
         b.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         b.setTextColor(filled ? Color.rgb(4, 25, 28) : text);
