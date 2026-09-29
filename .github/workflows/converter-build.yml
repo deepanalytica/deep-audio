@@ -12,7 +12,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
@@ -29,23 +29,28 @@ jobs:
       - name: Verify Android SDK
         run: |
           test -f "$ANDROID_SDK_ROOT/platforms/android-35/android.jar" || "$ANDROID_SDK_ROOT/cmdline-tools/16.0/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
-          "$ANDROID_SDK_ROOT/cmdline-tools/16.0/bin/sdkmanager" --list_installed | head -80
+          test -x "$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner"
 
       - name: Set up Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.9
 
-      - name: Build APK
-        run: gradle :converter:assembleDebug --stacktrace
+      - name: Build signed universal release APK
+        run: gradle :converter:assembleRelease --stacktrace
 
-      - name: Rename APK
-        run: cp converter/build/outputs/apk/debug/converter-debug.apk DeepAudioConvert-1.0.0.apk
+      - name: Verify APK signatures
+        run: |
+          APK="converter/build/outputs/apk/release/converter-release.apk"
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK"
+          unzip -t "$APK"
+          cp "$APK" DeepAudioConvert-1.0.1.apk
+          ls -lh DeepAudioConvert-1.0.1.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: DeepAudioConvert-APK
-          path: DeepAudioConvert-1.0.0.apk
+          name: DeepAudioConvert-1.0.1-APK
+          path: DeepAudioConvert-1.0.1.apk
           if-no-files-found: error
           retention-days: 7
