@@ -1,0 +1,51 @@
+name: Deep Audio Convert APK
+
+on:
+  push:
+    branches: ["build/audio-converter-apk-20260929"]
+    paths:
+      - "converter/**"
+      - "settings.gradle.kts"
+      - ".github/workflows/converter-build.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK 35
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+
+      - name: Build APK
+        run: gradle :converter:assembleDebug --stacktrace
+
+      - name: Rename APK
+        run: cp converter/build/outputs/apk/debug/converter-debug.apk DeepAudioConvert-1.0.0.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DeepAudioConvert-APK
+          path: DeepAudioConvert-1.0.0.apk
+          if-no-files-found: error
+          retention-days: 7
