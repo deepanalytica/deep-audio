@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "DeepAudio"
 include(":app")
+include(":converter")
