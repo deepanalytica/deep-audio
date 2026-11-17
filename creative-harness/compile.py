@@ -152,7 +152,7 @@ def build(args):
         options=["detail","pov","reveal","full","focus","invert","pop","kinetic","chart"]
         # Phrases remain complete. Never split a word or show dangling captions.
         phrases=[]
-        for thought in re.split(r"(?<=[,.!?;:])\\s+",scene["text"]):
+        for thought in re.split(r"(?<=[,.!?;:])\s+",scene["text"]):
             thought=thought.strip()
             if not thought: continue
             if len(thought)<=86:
