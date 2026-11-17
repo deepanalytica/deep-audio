@@ -1,0 +1,151 @@
+{
+  "source": "The Economist · The World Ahead 2027",
+  "original_url": "https://images.ctfassets.net/2h5kbjx7tvqe/1TpWj3uLsyWAiiYbDIDiY/ed43f5d4adbfd67048f894f3b9267113/The_World_Ahead_cover_2027.jpg",
+  "coordinate_system": "square art crop manually checked against official cover; normalized range [0,1]",
+  "spots": {
+    "cover": {
+      "x": 0.5,
+      "y": 0.5,
+      "r": 0.45,
+      "label": "PORTADA ORIGINAL"
+    },
+    "leaders": {
+      "x": 0.51,
+      "y": 0.053,
+      "r": 0.077,
+      "label": "LÍDERES"
+    },
+    "rocket": {
+      "x": 0.26,
+      "y": 0.28,
+      "r": 0.075,
+      "label": "COHETE"
+    },
+    "china": {
+      "x": 0.095,
+      "y": 0.353,
+      "r": 0.065,
+      "label": "BANDERA CHINA"
+    },
+    "crowd": {
+      "x": 0.065,
+      "y": 0.43,
+      "r": 0.076,
+      "label": "MULTITUD"
+    },
+    "courthouse": {
+      "x": 0.402,
+      "y": 0.293,
+      "r": 0.09,
+      "label": "INSTITUCIONES"
+    },
+    "market": {
+      "x": 0.578,
+      "y": 0.332,
+      "r": 0.095,
+      "label": "GRÁFICO FINANCIERO"
+    },
+    "coins": {
+      "x": 0.629,
+      "y": 0.436,
+      "r": 0.058,
+      "label": "MONEDAS"
+    },
+    "brain": {
+      "x": 0.497,
+      "y": 0.516,
+      "r": 0.083,
+      "label": "CEREBRO · IA"
+    },
+    "statue": {
+      "x": 0.706,
+      "y": 0.487,
+      "r": 0.06,
+      "label": "ESTATUA"
+    },
+    "boot": {
+      "x": 0.823,
+      "y": 0.526,
+      "r": 0.061,
+      "label": "BOTA"
+    },
+    "ballot": {
+      "x": 0.899,
+      "y": 0.578,
+      "r": 0.065,
+      "label": "URNA ELECTORAL"
+    },
+    "pipe": {
+      "x": 0.883,
+      "y": 0.47,
+      "r": 0.086,
+      "label": "TUBERÍA ROTA"
+    },
+    "flames": {
+      "x": 0.095,
+      "y": 0.54,
+      "r": 0.08,
+      "label": "INCENDIOS"
+    },
+    "missiles": {
+      "x": 0.173,
+      "y": 0.637,
+      "r": 0.093,
+      "label": "MISILES"
+    },
+    "tanks": {
+      "x": 0.49,
+      "y": 0.77,
+      "r": 0.097,
+      "label": "TANQUES"
+    },
+    "ship": {
+      "x": 0.814,
+      "y": 0.757,
+      "r": 0.091,
+      "label": "BUQUE"
+    },
+    "wind": {
+      "x": 0.905,
+      "y": 0.853,
+      "r": 0.061,
+      "label": "RENOVABLES"
+    },
+    "reel": {
+      "x": 0.322,
+      "y": 0.851,
+      "r": 0.075,
+      "label": "CINE"
+    },
+    "crystal": {
+      "x": 0.568,
+      "y": 0.888,
+      "r": 0.056,
+      "label": "BOLA DE CRISTAL"
+    },
+    "telescope": {
+      "x": 0.443,
+      "y": 0.889,
+      "r": 0.055,
+      "label": "TELESCOPIO"
+    },
+    "thermometer": {
+      "x": 0.712,
+      "y": 0.874,
+      "r": 0.045,
+      "label": "TEMPERATURA"
+    },
+    "satellite": {
+      "x": 0.155,
+      "y": 0.245,
+      "r": 0.075,
+      "label": "SATÉLITE"
+    },
+    "aircraft": {
+      "x": 0.658,
+      "y": 0.181,
+      "r": 0.074,
+      "label": "AVIÓN"
+    }
+  }
+}
