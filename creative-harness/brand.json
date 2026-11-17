@@ -1,0 +1,20 @@
+{
+  "name": "We Are Logic",
+  "tagline": "Ideas, historias y señales",
+  "colors": {
+    "background": "#0B0D0F",
+    "surface": "#1E1F24",
+    "ink": "#F5F4EF",
+    "signal": "#FF3B3B",
+    "gray": "#D4D1C8"
+  },
+  "fonts": {
+    "display": "Montserrat ExtraBold",
+    "ui": "Inter"
+  },
+  "fps": 24,
+  "width": 1280,
+  "height": 720,
+  "beatSeconds": 2.7,
+  "safePercent": 8
+}
