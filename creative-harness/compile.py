@@ -163,7 +163,7 @@ def build(args):
             elif j%6==2:mode="pov"
             elif j%6==1:mode="reveal"
             else:mode="full"
-            effect=["flash","detail","zoom","whoosh","pop","pov","impact"][j%7]
+            effect=["flash","detail","slow","distort","pop","blur","impact","whoosh","reveal"][j%9]
             manifest.append({
                 "scene":scene["id"],"title":scene["title"],"label":evidence["spots"][spot]["label"],
                 "spot":spot,"pos":[evidence["spots"][spot]["x"],evidence["spots"][spot]["y"]],
