@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       job:
-        description: 'Nombre del archivo de patron-cero-tts/jobs (sin extension)'
+        description: 'Archivo de patron-cero-tts/jobs sin extension'
         required: true
         default: 'prueba_patron_cero'
       voice:
@@ -23,6 +23,8 @@ jobs:
     timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -40,11 +42,20 @@ jobs:
           EVENT_VOICE: ${{ inputs.voice }}
         run: |
           python - <<'PY'
-          import os, re
+          import os, re, subprocess
           from pathlib import Path
           dispatch = os.environ['EVENT_NAME'] == 'workflow_dispatch'
-          job = (os.environ.get('EVENT_JOB') or 'prueba_patron_cero') if dispatch else 'prueba_patron_cero'
-          voice = (os.environ.get('EVENT_VOICE') or 'em_alex') if dispatch else 'em_alex'
+          if dispatch:
+              job = os.environ.get('EVENT_JOB') or 'prueba_patron_cero'
+              voice = os.environ.get('EVENT_VOICE') or 'em_alex'
+          else:
+              try:
+                  changed = subprocess.check_output(['git','diff','--name-only','HEAD^','HEAD'],text=True).splitlines()
+              except subprocess.CalledProcessError:
+                  changed = []
+              jobs = [Path(path).stem for path in changed if re.fullmatch(r'patron-cero-tts/jobs/[A-Za-z0-9_-]+\.txt',path)]
+              job = jobs[-1] if jobs else 'prueba_patron_cero'
+              voice = 'em_alex'
           assert re.fullmatch(r'[A-Za-z0-9_-]+', job), 'Nombre inválido'
           assert voice in ('em_alex','em_santa','ef_dora'), 'Voz no válida'
           assert Path(f'patron-cero-tts/jobs/{job}.txt').is_file(), 'Falta texto de entrada'
