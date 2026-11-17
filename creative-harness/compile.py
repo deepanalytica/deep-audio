@@ -150,6 +150,7 @@ def build(args):
             cue_list.append((max(0,round((idx/len(low))*beats)),spot,quote))
         cue_list.sort()
         options=["detail","pov","reveal","full","focus","invert","pop","kinetic","chart"]
+        words=scene["text"].split()
         for j in range(beats):
             st=position+j*(sec/beats)
             dur=sec/beats
@@ -164,8 +165,11 @@ def build(args):
             elif j%6==1:mode="reveal"
             else:mode="full"
             effect=["flash","detail","slow","distort","pop","blur","impact","whoosh","reveal"][j%9]
+            w0=round(j*len(words)/beats)
+            w1=round((j+1)*len(words)/beats)
+            capsule=" ".join(words[w0:w1])
             manifest.append({
-                "scene":scene["id"],"title":scene["title"],"label":evidence["spots"][spot]["label"],
+                "caption":capsule,"scene":scene["id"],"title":scene["title"],"label":evidence["spots"][spot]["label"],
                 "spot":spot,"pos":[evidence["spots"][spot]["x"],evidence["spots"][spot]["y"]],
                 "mode":mode,"effect":effect,"startSec":round(st,4),"durationSec":round(dur,4),
                 "kind":"FUENTE VISUAL" if spot!="cover" else "COMPROBACIÓN","n":j
