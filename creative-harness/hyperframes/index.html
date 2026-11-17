@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=1280,initial-scale=1">
+ <style>
+  html,body{padding:0;margin:0;width:1280px;height:720px;overflow:hidden;background:#0B0D0F;color:#F5F4EF;font-family:Inter,Arial,sans-serif;}
+  #stage{position:relative;width:1280px;height:720px;overflow:hidden;background:radial-gradient(ellipse at 70% 22%,#25323e 0%,#0b0d0f 55%,#050609 100%);}
+  .grid{position:absolute;inset:0;opacity:.21;background-image:linear-gradient(#6b727d 1px,transparent 1px),linear-gradient(90deg,#6b727d 1px,transparent 1px);background-size:80px 80px;}
+  .ring{position:absolute;border:2px solid #FF3B3B;border-radius:50%;left:810px;top:95px;width:410px;height:410px;box-shadow:0 0 48px #ff3b3b25;}
+  .ring2{position:absolute;border:1px solid #7b838d;border-radius:50%;left:760px;top:45px;width:510px;height:510px;}
+  .locator{position:absolute;width:95px;height:95px;top:255px;left:968px;border:5px solid #FF3B3B;transform:rotate(45deg);border-radius:8px}
+  .brand{position:absolute;left:110px;top:230px;font-size:70px;font-weight:900;letter-spacing:-3px;text-shadow:0 5px 20px #000;}
+  .tag{position:absolute;left:118px;top:344px;font-size:23px;letter-spacing:7px;font-weight:700;color:#E6DFD2}
+  .line{position:absolute;left:110px;top:417px;width:410px;height:8px;background:#FF3B3B;border-radius:5px}
+  .sub{position:absolute;left:112px;top:610px;font-size:21px;color:#CCCFD3;font-weight:600;letter-spacing:3px}
+  .mark{color:#FF3B3B}.corners{position:absolute;left:85px;top:70px;width:1110px;height:565px;border:2px solid #FF3B3B35}
+ </style>
+</head><body>
+ <div id="stage" data-composition-id="WeAreLogicIntro" data-start="0" data-width="1280" data-height="720">
+  <div class="clip grid" data-start="0" data-duration="3" data-track-index="0"></div>
+  <div class="clip ring2" data-start="0" data-duration="3" data-track-index="1"></div>
+  <div class="clip ring" data-start="0" data-duration="3" data-track-index="2"></div>
+  <div class="clip locator" data-start="0" data-duration="3" data-track-index="3"></div>
+  <div class="clip corners" data-start="0" data-duration="3" data-track-index="4"></div>
+  <div class="clip brand" id="brand" data-start="0" data-duration="3" data-track-index="5">
+   <span class="mark">///</span> WE ARE LOGIC
+  </div>
+  <div class="clip tag" id="tag" data-start="0" data-duration="3" data-track-index="6">IDEAS · HISTORIAS · SEÑALES</div>
+  <div class="clip line" id="line" data-start="0" data-duration="3" data-track-index="7"></div>
+  <div class="clip sub" id="sub" data-start="0" data-duration="3" data-track-index="8">OBSERVAR. COMPARAR. COMPROBAR.</div>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+  <script>
+    if(window.gsap){
+     const tl=gsap.timeline({paused:true});
+     tl.fromTo('#brand',{x:-120,opacity:0},{x:0,opacity:1,duration:.8,ease:'power3.out'},.08)
+       .fromTo('#tag',{y:35,opacity:0},{y:0,opacity:1,duration:.65},.45)
+       .fromTo('#line',{scaleX:0,transformOrigin:'left'},{scaleX:1,duration:.7},.5)
+       .fromTo('#sub',{opacity:0},{opacity:1,duration:.45},1.3)
+       .fromTo('.locator',{rotation:-120,opacity:0},{rotation:45,opacity:1,duration:2},0)
+       .fromTo('.ring',{scale:.6,opacity:0},{scale:1,opacity:1,duration:1},0);
+     window.__timelines=window.__timelines||{};
+     window.__timelines.WeAreLogicIntro=tl;
+    }
+  </script>
+ </div>
+</body></html>
