@@ -19,7 +19,7 @@ const Shot:React.FC<{beat:Beat}> = ({beat})=>{
  const detail=beat.mode==='detail'||beat.mode==='focus';
  const inverted=beat.mode==='invert';
  const kinetic=beat.mode==='kinetic';
- const coverX=700,coverY=50,coverSize=620;
+ const coverX=656,coverY=74,coverSize=568;
  const targetX=coverX+point[0]*coverSize;
  const targetY=coverY+point[1]*coverSize;
  const pulse=1+0.12*Math.sin(f*.22);
