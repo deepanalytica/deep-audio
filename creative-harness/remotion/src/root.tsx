@@ -19,7 +19,7 @@ const Shot:React.FC<{beat:Beat}> = ({beat})=>{
  const detail=beat.mode==='detail'||beat.mode==='focus';
  const inverted=beat.mode==='invert';
  const kinetic=beat.mode==='kinetic';
- const coverX=656,coverY=74,coverSize=568;
+ const coverX=626,coverY=94,coverSize=530;
  const targetX=coverX+point[0]*coverSize;
  const targetY=coverY+point[1]*coverSize;
  const pulse=1+0.12*Math.sin(f*.22);
@@ -34,13 +34,13 @@ const Shot:React.FC<{beat:Beat}> = ({beat})=>{
   <div style={{position:'absolute',left:0,top:0,width:'100%',height:'100%',
    opacity:.13,backgroundImage:'linear-gradient(rgba(255,255,255,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.12) 1px,transparent 1px)',
    backgroundSize:'65px 65px',transform:'translate(-2px,-2px)'}}/>
-  <div style={{position:'absolute',left:50,top:26,fontSize:23,fontWeight:900,letterSpacing:3}}>
+  <div style={{position:'absolute',left:96,top:26,fontSize:23,fontWeight:900,letterSpacing:3}}>
    <span style={{color:RED,fontWeight:900,fontSize:27}}>/// </span>WE ARE LOGIC
   </div>
-  <div style={{position:'absolute',left:49,top:84,fontSize:15,letterSpacing:3,color:'#F3A6A8'}}>
+  <div style={{position:'absolute',left:96,top:84,fontSize:15,letterSpacing:3,color:'#F3A6A8'}}>
     ANÁLISIS VISUAL • 2027
   </div>
-  <div style={{position:'absolute',left:50,top:154,width:585,opacity:enter,
+  <div style={{position:'absolute',left:96,top:154,width:495,opacity:enter,
       transform:'translateY('+((1-enter)*15)+'px)'}}>
     <div style={{color:RED,fontSize:17,fontWeight:850,letterSpacing:2,marginBottom:25}}>{beat.kind}</div>
     <div style={{fontSize:Math.min(54,beat.label.length>22?39:54),lineHeight:1.04,fontWeight:900,
@@ -72,7 +72,7 @@ const Shot:React.FC<{beat:Beat}> = ({beat})=>{
     <div style={{position:'absolute',left:targetX,top:targetY,width:Math.max(0,690-targetX),height:2,
        background:'linear-gradient(90deg,#FF3B3B,transparent)',opacity:.65}}/>
   </React.Fragment>}
-  {detail&&<div style={{position:'absolute',left:425,top:420,width:300,height:255,
+  {detail&&<div style={{position:'absolute',left:396,top:410,width:282,height:255,
     borderRadius:14,border:'5px solid '+RED,overflow:'hidden',boxShadow:'0 12px 35px rgba(0,0,0,.82)',
     opacity:enter,transform:'scale('+(0.80+enter*.2)+')'}}>
     <Img src={staticFile('cover.png')} style={{
@@ -90,7 +90,7 @@ const Shot:React.FC<{beat:Beat}> = ({beat})=>{
   {beat.effect==='flash'&&f<2&&<AbsoluteFill style={{backgroundColor:'#F5F4EF',opacity:f===0?.72:.24,pointerEvents:'none'}}/>}
   {beat.effect==='zoom'&&f<4&&<AbsoluteFill style={{background:'rgba(255,59,59,.12)',pointerEvents:'none',opacity:(4-f)/4}}/>}
   {beat.effect==='whoosh'&&f<5&&<AbsoluteFill style={{backdropFilter:'blur('+(5-f)*1.1+'px)',pointerEvents:'none'}}/>}
-  <div style={{position:'absolute',left:48,bottom:28,color:'#B1B5B9',letterSpacing:2,fontSize:13}}>
+  <div style={{position:'absolute',left:96,bottom:28,color:'#B1B5B9',letterSpacing:2,fontSize:13}}>
     WE ARE LOGIC // EVIDENCIA · INTERPRETACIÓN · ESCENARIOS
   </div>
  </AbsoluteFill>;
