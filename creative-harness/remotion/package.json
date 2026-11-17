@@ -1,0 +1,17 @@
+{
+  "name": "we-are-logic-creative-harness",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "render": "remotion render src/index.tsx WeAreLogicFilm out/we_are_logic_remotion.mp4 --codec h264 --crf 23 --concurrency 2 --log=error",
+    "smoke": "remotion render src/index.tsx WeAreLogicFilm out/we_are_logic_smoke.mp4 --frames=0-719 --codec h264 --crf 25 --concurrency 2 --log=error",
+    "studio": "remotion studio src/index.tsx"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.377",
+    "remotion": "4.0.377",
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
+  }
+}
