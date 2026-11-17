@@ -87,9 +87,24 @@ const Shot:React.FC<{beat:Beat}> = ({beat})=>{
      pointerEvents:'none',border:'2px dashed rgba(255,60,60,.55)',borderRadius:8}}>
     <div style={{position:'absolute',right:15,top:15,color:RED,fontWeight:850,fontSize:18}}>● ANALIZANDO</div>
   </div>}
+  {beat.effect==='slow'&&f<6&&<div style={{position:'absolute',left:coverX+7,top:coverY+4,
+    width:coverSize,height:coverSize,opacity:(6-f)/22,filter:'blur(2px)',pointerEvents:'none'}}>
+    <Img src={staticFile('cover.png')} style={{width:'100%',height:'100%',objectFit:'contain'}}/>
+  </div>}
+  {beat.effect==='distort'&&f<5&&<div style={{position:'absolute',left:coverX+12-f*2,
+    top:coverY,width:coverSize,height:coverSize,opacity:.14*(5-f)/5,
+    mixBlendMode:'screen',filter:'hue-rotate(150deg) contrast(1.5)',pointerEvents:'none'}}>
+    <Img src={staticFile('cover.png')} style={{width:'100%',height:'100%',objectFit:'contain'}}/>
+  </div>}
+  {beat.effect==='pop'&&f<8&&<div style={{position:'absolute',left:targetX-34,top:targetY-34,
+    width:68,height:68,border:'7px solid '+RED,borderRadius:'50%',
+    opacity:(8-f)/8,transform:'scale('+(0.3+f*.18)+')',pointerEvents:'none'}}/>}
+  {beat.effect==='reveal'&&f<10&&<div style={{position:'absolute',left:coverX,top:coverY,width:coverSize,height:6,
+    background:RED,boxShadow:'0 0 25px '+RED,opacity:(10-f)/10,transform:'translateY('+(f*coverSize/10)+'px)',
+    pointerEvents:'none'}}/>}
   {beat.effect==='flash'&&f<2&&<AbsoluteFill style={{backgroundColor:'#F5F4EF',opacity:f===0?.72:.24,pointerEvents:'none'}}/>}
   {beat.effect==='zoom'&&f<4&&<AbsoluteFill style={{background:'rgba(255,59,59,.12)',pointerEvents:'none',opacity:(4-f)/4}}/>}
-  {beat.effect==='whoosh'&&f<5&&<AbsoluteFill style={{backdropFilter:'blur('+(5-f)*1.1+'px)',pointerEvents:'none'}}/>}
+  {(beat.effect==='whoosh'||beat.effect==='blur')&&f<5&&<AbsoluteFill style={{backdropFilter:'blur('+(5-f)*1.1+'px)',pointerEvents:'none'}}/>}
   <div style={{position:'absolute',left:96,bottom:28,color:'#B1B5B9',letterSpacing:2,fontSize:13}}>
     WE ARE LOGIC // EVIDENCIA · INTERPRETACIÓN · ESCENARIOS
   </div>
