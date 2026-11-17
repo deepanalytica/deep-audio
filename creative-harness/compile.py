@@ -2,7 +2,7 @@
 """Build synchronized evidence-led beats, original music and SFX for Remotion.
 The source cover is downloaded from The Economist Group official CDN.
 """
-import argparse, json, math, subprocess, sys, urllib.request
+import argparse, json, math, re, subprocess, sys, urllib.request
 from pathlib import Path
 import numpy as np
 import soundfile as sf
@@ -150,7 +150,22 @@ def build(args):
             cue_list.append((max(0,round((idx/len(low))*beats)),spot,quote))
         cue_list.sort()
         options=["detail","pov","reveal","full","focus","invert","pop","kinetic","chart"]
-        words=scene["text"].split()
+        # Phrases remain complete. Never split a word or show dangling captions.
+        phrases=[]
+        for thought in re.split(r"(?<=[,.!?;:])\\s+",scene["text"]):
+            thought=thought.strip()
+            if not thought: continue
+            if len(thought)<=86:
+                phrases.append(thought)
+                continue
+            group=""
+            for word in thought.split():
+                if group and len(group)+len(word)+1>79:
+                    phrases.append(group)
+                    group=word
+                else:
+                    group=(group+" "+word).strip()
+            if group: phrases.append(group)
         for j in range(beats):
             st=position+j*(sec/beats)
             dur=sec/beats
@@ -165,9 +180,7 @@ def build(args):
             elif j%6==1:mode="reveal"
             else:mode="full"
             effect=["flash","detail","slow","distort","pop","blur","impact","whoosh","reveal"][j%9]
-            w0=round(j*len(words)/beats)
-            w1=round((j+1)*len(words)/beats)
-            capsule=" ".join(words[w0:w1])
+            capsule=phrases[min(len(phrases)-1,int((j+.5)*len(phrases)/beats))]
             manifest.append({
                 "caption":capsule,"scene":scene["id"],"title":scene["title"],"label":evidence["spots"][spot]["label"],
                 "spot":spot,"pos":[evidence["spots"][spot]["x"],evidence["spots"][spot]["y"]],
