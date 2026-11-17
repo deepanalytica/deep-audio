@@ -23,7 +23,7 @@ const Shot:React.FC<{beat:Beat}> = ({beat})=>{
  const targetX=coverX+point[0]*coverSize;
  const targetY=coverY+point[1]*coverSize;
  const pulse=1+0.12*Math.sin(f*.22);
- const showMarker=beat.spot!=='cover';
+ const showMarker=beat.spot!=='cover'&&!detail;
  const jitter=(beat.effect==='flash'&&f<3)?2-f:0;
  const backdrop={
   background:'radial-gradient(circle at 69% 42%, #25323E 0%, #0B0D0F 65%, #000 100%)',
@@ -72,16 +72,25 @@ const Shot:React.FC<{beat:Beat}> = ({beat})=>{
     <div style={{position:'absolute',left:targetX,top:targetY,width:Math.max(0,690-targetX),height:2,
        background:'linear-gradient(90deg,#FF3B3B,transparent)',opacity:.65}}/>
   </React.Fragment>}
-  {detail&&<div style={{position:'absolute',left:396,top:410,width:282,height:255,
-    borderRadius:14,border:'5px solid '+RED,overflow:'hidden',boxShadow:'0 12px 35px rgba(0,0,0,.82)',
-    opacity:enter,transform:'scale('+(0.80+enter*.2)+')'}}>
+  {detail&&<div style={{position:'absolute',left:coverX,top:coverY,width:coverSize,height:coverSize,
+    borderRadius:10,overflow:'hidden',border:'3px solid '+RED,opacity:enter,
+    boxShadow:'0 0 38px rgba(255,60,60,.25)'}}>
     <Img src={staticFile('cover.png')} style={{
-      position:'absolute',width:780,height:780,maxWidth:'none',
-      left:150-point[0]*780,top:127-point[1]*780,
-      filter:'contrast(1.16)'
+      position:'absolute',width:1060,height:1060,maxWidth:'none',
+      left:coverSize/2-point[0]*1060,top:coverSize/2-point[1]*1060,
+      filter:'contrast(1.10)'
     }}/>
-    <div style={{position:'absolute',bottom:0,left:0,right:0,background:'rgba(0,0,0,.85)',
-    color:FG,fontSize:18,padding:8,fontWeight:900}}>DETALLE REAL · SIN RECREACIÓN</div>
+    <div style={{position:'absolute',top:13,right:13,width:142,height:142,
+      background:'#FFF',border:'3px solid '+RED,borderRadius:8,overflow:'hidden',
+      boxShadow:'0 8px 20px rgba(0,0,0,.6)'}}>
+      <Img src={staticFile('cover.png')} style={{width:'100%',height:'100%',objectFit:'contain'}}/>
+      <div style={{position:'absolute',left:point[0]*142-12,top:point[1]*142-12,
+        width:24,height:24,border:'3px solid '+RED,borderRadius:'50%',boxShadow:'0 0 9px rgba(0,0,0,.65)'}}/>
+    </div>
+    <div style={{position:'absolute',left:12,bottom:12,color:FG,background:'rgba(10,10,10,.88)',
+      fontSize:18,fontWeight:800,padding:'8px 12px',maxWidth:500}}>
+      DETALLE EXACTO · {beat.label}
+    </div>
   </div>}
   {beat.mode==='pov'&&<div style={{position:'absolute',left:coverX+15,top:coverY+15,width:coverSize-30,height:coverSize-30,
      pointerEvents:'none',border:'2px dashed rgba(255,60,60,.55)',borderRadius:8}}>
@@ -107,7 +116,7 @@ const Shot:React.FC<{beat:Beat}> = ({beat})=>{
   {(beat.effect==='whoosh'||beat.effect==='blur')&&f<5&&<AbsoluteFill style={{backdropFilter:'blur('+(5-f)*1.1+'px)',pointerEvents:'none'}}/>}
   <div style={{position:'absolute',left:96,top:525,width:484,minHeight:84,
     padding:'12px 15px',borderLeft:'5px solid '+RED,background:'rgba(2,5,9,.62)',
-    color:'#F5F4EF',fontSize:25,fontWeight:700,lineHeight:1.25,opacity:enter,
+    color:'#F5F4EF',fontSize:beat.caption.length>92?18:beat.caption.length>70?21:25,fontWeight:700,lineHeight:1.25,opacity:enter,
     transform:'translateY('+(1-enter)*14+'px)'}}>
     {beat.caption}
   </div>
