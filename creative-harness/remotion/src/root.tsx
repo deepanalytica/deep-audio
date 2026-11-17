@@ -3,7 +3,7 @@ import {AbsoluteFill,Audio,Composition,Img,OffthreadVideo,Sequence,
   interpolate,staticFile,useCurrentFrame,useVideoConfig} from 'remotion';
 import data from '../timeline.json';
 
-type Beat = {scene:string,title:string,label:string,spot:string,pos:[number,number],
+type Beat = {caption:string,scene:string,title:string,label:string,spot:string,pos:[number,number],
 mode:string,effect:string,startSec:number,durationSec:number,kind:string,n:number};
 const FPS=24;
 const RED='#FF3B3B',BG='#0B0D0F',FG='#F5F4EF';
@@ -105,6 +105,15 @@ const Shot:React.FC<{beat:Beat}> = ({beat})=>{
   {beat.effect==='flash'&&f<2&&<AbsoluteFill style={{backgroundColor:'#F5F4EF',opacity:f===0?.72:.24,pointerEvents:'none'}}/>}
   {beat.effect==='zoom'&&f<4&&<AbsoluteFill style={{background:'rgba(255,59,59,.12)',pointerEvents:'none',opacity:(4-f)/4}}/>}
   {(beat.effect==='whoosh'||beat.effect==='blur')&&f<5&&<AbsoluteFill style={{backdropFilter:'blur('+(5-f)*1.1+'px)',pointerEvents:'none'}}/>}
+  <div style={{position:'absolute',left:96,top:525,width:484,minHeight:84,
+    padding:'12px 15px',borderLeft:'5px solid '+RED,background:'rgba(2,5,9,.62)',
+    color:'#F5F4EF',fontSize:25,fontWeight:700,lineHeight:1.25,opacity:enter,
+    transform:'translateY('+(1-enter)*14+'px)'}}>
+    {beat.caption}
+  </div>
+  <div style={{position:'absolute',height:4,left:96,right:112,bottom:16,background:'#323943'}}>
+    <div style={{height:'100%',width:pct(escape),background:RED}}/>
+  </div>
   <div style={{position:'absolute',left:96,bottom:28,color:'#B1B5B9',letterSpacing:2,fontSize:13}}>
     WE ARE LOGIC // EVIDENCIA · INTERPRETACIÓN · ESCENARIOS
   </div>
