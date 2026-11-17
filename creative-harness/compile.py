@@ -185,7 +185,8 @@ def build(args):
     sfx,events=effects_for_timeline(manifest,total)
     music=composed_music(total)
     # mix with safe headroom. Loudness normalization performed in FFmpeg.
-    mix=narration*.88+music*.19+sfx*.32
+    samples=min(len(narration),len(music),len(sfx))
+    mix=narration[:samples]*.88+music[:samples]*.19+sfx[:samples]*.32
     sf.write(PUBLIC/"premaster.wav",np.clip(mix,-.95,.95),SR,subtype="PCM_16")
     run("ffmpeg","-y","-v","error","-i",PUBLIC/"premaster.wav","-af","loudnorm=I=-16:TP=-1.5:LRA=11","-c:a","pcm_s16le",PUBLIC/"master.wav")
     timeline={"fps":FPS,"width":1280,"height":720,"durationSec":total,"beats":manifest,"events":events,
