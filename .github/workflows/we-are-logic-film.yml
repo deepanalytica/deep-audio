@@ -1,0 +1,100 @@
+name: We Are Logic | Creative Harness · Remotion + HyperFrames
+
+on:
+  push:
+    branches:
+      - feature/we-are-logic-creative-harness
+    paths:
+      - "creative-harness/**"
+      - ".github/workflows/we-are-logic-film.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render-documentary:
+    name: Compilar documental con motores reales
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    steps:
+      - name: Obtener proyecto
+        uses: actions/checkout@v4
+      - name: Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Instalar FFmpeg y bibliotecas de voz
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg espeak-ng libsndfile1
+          python -m pip install --upgrade pip
+          pip install -r patron-cero-tts/engine/requirements.txt pillow
+      - name: Voz documental (Kokoro local; no costos por minuto)
+        run: |
+          mkdir -p creative-harness/_speech
+          python patron-cero-tts/engine/generate.py \
+            --input patron-cero-tts/jobs/we_are_logic_2027_dinamico.txt \
+            --output-dir creative-harness/_speech \
+            --voice em_alex \
+            --speed 1.06
+      - name: Preparar imagen oficial, mapa de evidencias, música y SFX
+        run: |
+          python creative-harness/compile.py --speech-dir creative-harness/_speech
+          python -m json.tool creative-harness/remotion/timeline.json > /dev/null
+      - name: Compilar apertura con HyperFrames (motor real)
+        shell: bash
+        run: |
+          cd creative-harness/hyperframes
+          npx --yes hyperframes render
+          echo "Archivos MP4 creados por HyperFrames:"
+          find . -type f -name '*.mp4' -not -path '*/node_modules/*' -print
+          FILE=$(find . -type f -name '*.mp4' -not -path '*/node_modules/*' | head -n 1)
+          test -n "$FILE"
+          cd ../../
+          ffmpeg -y -v error -i "creative-harness/hyperframes/${FILE#./}" \
+            -t 3 -vf "scale=1280:720:flags=lanczos,fps=24,setsar=1" \
+            -an -c:v libx264 -pix_fmt yuv420p -crf 22 \
+            creative-harness/remotion/public/intro.mp4
+          ffprobe -v error -show_entries format=duration -of default=nw=1 creative-harness/remotion/public/intro.mp4
+      - name: Instalar Remotion
+        working-directory: creative-harness/remotion
+        run: npm install --no-audit --no-fund
+      - name: Prueba de render de 30 segundos
+        working-directory: creative-harness/remotion
+        run: npm run smoke
+      - name: Exportar documental final con Remotion
+        working-directory: creative-harness/remotion
+        run: npm run render
+      - name: QA automático y fotogramas
+        shell: bash
+        run: |
+          VIDEO=creative-harness/remotion/out/we_are_logic_remotion.mp4
+          test -s "$VIDEO"
+          ffprobe -v error -show_entries stream=codec_name,width,height -show_entries format=duration,size -of json "$VIDEO" > creative-harness/remotion/out/ffprobe.json
+          python - <<'PY'
+          import json
+          p='creative-harness/remotion/out/ffprobe.json'
+          j=json.load(open(p))
+          streams=j['streams']; assert any(s.get('codec_name')=='h264' and s.get('width')==1280 for s in streams)
+          assert any(s.get('codec_name') in ('aac','mp3','pcm_s16le') for s in streams), 'No audio'
+          assert float(j['format']['duration'])>100
+          print('QA PASS',j['format']['duration'])
+          PY
+          ffmpeg -y -v error -ss 13 -i "$VIDEO" -frames:v 1 creative-harness/remotion/out/control_0013.jpg
+          ffmpeg -y -v error -ss 71 -i "$VIDEO" -frames:v 1 creative-harness/remotion/out/control_0071.jpg
+      - name: Entregar documental y QA
+        uses: actions/upload-artifact@v4
+        with:
+          name: WE_ARE_LOGIC_2027_Remotion_HyperFrames
+          path: |
+            creative-harness/remotion/out/we_are_logic_remotion.mp4
+            creative-harness/remotion/out/ffprobe.json
+            creative-harness/remotion/out/control_*.jpg
+            creative-harness/remotion/timeline.json
+          retention-days: 7
