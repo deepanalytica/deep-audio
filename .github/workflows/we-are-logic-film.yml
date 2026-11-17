@@ -47,6 +47,12 @@ jobs:
             --output-dir creative-harness/_speech \
             --voice em_alex \
             --speed 1.06
+      - name: Resguardar la locución para no regenerarla si falla el video
+        uses: actions/upload-artifact@v4
+        with:
+          name: WE_ARE_LOGIC_2027_VOZ_12_ESCENAS
+          path: creative-harness/_speech/scene_*.mp3
+          retention-days: 7
       - name: Preparar imagen oficial, mapa de evidencias, música y SFX
         run: |
           python creative-harness/compile.py --speech-dir creative-harness/_speech
